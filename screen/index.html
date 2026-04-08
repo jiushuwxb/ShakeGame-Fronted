@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>希捷极速传输挑战赛大屏</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="screen-shell">
+      <header class="screen-header">
+        <div>
+          <div class="brand" id="brandLine">Seagate Data Transfer Challenge</div>
+          <h1 id="title">希捷极速传输挑战赛</h1>
+          <p class="subtitle">扫码加入比赛，实时刷新摇动次数与排名。</p>
+        </div>
+        <div class="timer">
+          <span class="hint">倒计时</span>
+          <strong id="timer">60</strong>
+        </div>
+        <div class="qrcode" id="qrcode"></div>
+      </header>
+
+      <section class="screen-grid">
+        <div class="screen-panel">
+          <div class="status-line">
+            <span class="pill" id="status">连接中</span>
+            <strong>参与玩家 <span id="total">0/10</span></strong>
+          </div>
+          <div class="leaderboard" id="leaderboard"></div>
+        </div>
+
+        <aside class="control-panel">
+          <h2>现场控制</h2>
+          <p class="hint">输入后端 `ADMIN_TOKEN` 后可控制比赛流程。</p>
+          <input id="adminToken" type="password" placeholder="管理口令">
+          <div class="stack">
+            <button id="start">开始比赛</button>
+            <button class="secondary" id="end">手动结束</button>
+            <button class="danger" id="reset">重置活动</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+    <script src="./config.js?v=20260408-1"></script>
+    <script src="./screen.js?v=20260408-1"></script>
+  </body>
+</html>
