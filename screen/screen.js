@@ -74,9 +74,11 @@ function sendAdmin(type) {
 }
 
 function render() {
+  const onlinePlayers = snapshot.players.filter((player) => player.online);
+
   els.status.textContent = stateText[snapshot.status] || snapshot.status;
-  els.total.textContent = `${snapshot.players.length}/${snapshot.maxPlayers}`;
-  renderLeaderboard(snapshot.players.slice(0, 10));
+  els.total.textContent = `${onlinePlayers.length}/${snapshot.maxPlayers}`;
+  renderLeaderboard(onlinePlayers.slice(0, 10));
   startCountdown();
 }
 
@@ -87,9 +89,9 @@ function renderLeaderboard(players) {
   }
 
   const max = Math.max(...players.map((item) => item.count), 1);
-  els.leaderboard.innerHTML = players.map((item) => `
+  els.leaderboard.innerHTML = players.map((item, index) => `
     <div class="leader-row">
-      <div class="rank-no">#${item.rank}</div>
+      <div class="rank-no">#${index + 1}</div>
       <img class="avatar" src="${item.avatar || makeAvatar(item.nickname)}" alt="">
       <div>
         <h2>${escapeHtml(item.nickname)}</h2>

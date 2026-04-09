@@ -34,6 +34,7 @@ let clockOffsetMs = 0;
 let currentRoundId = null;
 let motionListenerStarted = false;
 let accelerometer = null;
+let lastRotation = null;
 
 init();
 
@@ -144,13 +145,21 @@ function startMotionListening() {
   motionListenerStarted = true;
   window.addEventListener('devicemotion', (event) => {
     const acc = getAcceleration(event);
-    if (!acc) return;
+    const now = Date.now();
+    const rotation = getRotationRate(event);
+
+    if (!acc && !rotation) return;
 
     motionDetected = true;
-    const now = Date.now();
-    const current = { x: acc.x || 0, y: acc.y || 0, z: acc.z || 0, time: now };
 
-    handleMotionVector(current, 'DeviceMotion');
+    if (acc) {
+      const current = { x: acc.x || 0, y: acc.y || 0, z: acc.z || 0, time: now };
+      handleMotionVector(current, 'DeviceMotion');
+    }
+
+    if (rotation) {
+      handleRotationRate(rotation, now);
+    }
   }, { passive: true });
 }
 
@@ -198,8 +207,10 @@ function syncFromSnapshot() {
     clockOffsetMs = snapshot.serverTime - Date.now();
   }
 
+  const onlinePlayers = snapshot.players.filter((item) => item.online);
   const nextRoundId = snapshot.status === 'playing' ? snapshot.startedAt : null;
   const current = snapshot.players.find((item) => item.id === player.id);
+  const onlineRank = onlinePlayers.findIndex((item) => item.id === player.id) + 1;
 
   if (nextRoundId && nextRoundId !== currentRoundId) {
     currentRoundId = nextRoundId;
@@ -213,7 +224,7 @@ function syncFromSnapshot() {
 
   if (current) {
     localCount = snapshot.status === 'playing' ? Math.max(localCount, current.count) : current.count;
-    els.rank.textContent = current.rank ? `第 ${current.rank} 名` : '--';
+    els.rank.textContent = onlineRank > 0 ? `第 ${onlineRank} 名` : '--';
   }
 
   els.status.textContent = stateText[snapshot.status] || snapshot.status;
@@ -221,17 +232,17 @@ function syncFromSnapshot() {
   els.statusCard.classList.toggle('is-ended', snapshot.status === 'ended');
   els.hint.textContent = getHint(snapshot.status);
 
-  renderRanking(snapshot.players.slice(0, 5));
+  renderRanking(onlinePlayers.slice(0, 5));
   startCountdown();
 
   if (snapshot.status === 'ended') {
     if (redirectScheduled) return;
     if (hasRedirectedForCurrentRound()) return;
     redirectScheduled = true;
-    setTimeout(() => {
-      markRedirectedForCurrentRound();
-      if (config.questionnaireUrl) location.href = config.questionnaireUrl;
-    }, 5000);
+    // setTimeout(() => {
+    //   markRedirectedForCurrentRound();
+    //   if (config.questionnaireUrl) location.href = config.questionnaireUrl;
+    // }, 5000);
   } else {
     redirectScheduled = false;
   }
@@ -249,9 +260,9 @@ function renderRanking(players) {
   }
 
   const max = Math.max(...players.map((item) => item.count), 1);
-  els.ranking.innerHTML = players.map((item) => `
+  els.ranking.innerHTML = players.map((item, index) => `
     <div class="rank-row">
-      <div class="rank-no">${item.rank}</div>
+      <div class="rank-no">${index + 1}</div>
       <img class="avatar" src="${item.avatar || makeAvatar(item.nickname)}" alt="">
       <div>
         <strong>${escapeHtml(item.nickname)}</strong>
@@ -338,9 +349,35 @@ function handleMotionVector(current, source) {
   const elapsed = Math.max(16, current.time - lastMotion.time);
   const speed = (diff / elapsed) * 1000;
   lastMotion = current;
-  els.sensorStatus.textContent = `传感器状态：${source} 已收到数据，变化量 ${diff.toFixed(1)}，速度 ${speed.toFixed(0)}`;
+  els.sensorStatus.textContent = `传感器状态：${source} 已收到数据，加速度变化 ${diff.toFixed(1)}，速度 ${speed.toFixed(0)}`;
 
   if (diff > 3.2 || peak > 1.8 || speed > 180) onShake();
+}
+
+function handleRotationRate(rotation, now) {
+  const current = {
+    alpha: Math.abs(rotation.alpha || 0),
+    beta: Math.abs(rotation.beta || 0),
+    gamma: Math.abs(rotation.gamma || 0),
+    time: now
+  };
+
+  if (!lastRotation) {
+    lastRotation = current;
+    return;
+  }
+
+  const da = Math.abs(current.alpha - lastRotation.alpha);
+  const db = Math.abs(current.beta - lastRotation.beta);
+  const dg = Math.abs(current.gamma - lastRotation.gamma);
+  const diff = da + db + dg;
+  const peak = Math.max(da, db, dg, current.alpha, current.beta, current.gamma);
+  lastRotation = current;
+
+  if (diff > 60 || peak > 100) {
+    els.sensorStatus.textContent = `传感器状态：DeviceMotion 已收到数据，角速度变化 ${diff.toFixed(0)}`;
+    onShake();
+  }
 }
 
 function getAcceleration(event) {
@@ -350,6 +387,10 @@ function getAcceleration(event) {
   if (hasAxisValue(gravity)) return gravity;
   if (hasAxisValue(linear)) return linear;
   return null;
+}
+
+function getRotationRate(event) {
+  return hasRotationValue(event.rotationRate) ? event.rotationRate : null;
 }
 
 function renderSensorDebug(reason) {
@@ -362,6 +403,10 @@ function renderSensorDebug(reason) {
 
 function hasAxisValue(value) {
   return value && [value.x, value.y, value.z].some((axis) => typeof axis === 'number' && !Number.isNaN(axis));
+}
+
+function hasRotationValue(value) {
+  return value && [value.alpha, value.beta, value.gamma].some((axis) => typeof axis === 'number' && !Number.isNaN(axis));
 }
 
 function loadPlayer() {
