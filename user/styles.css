@@ -80,6 +80,11 @@ button.danger {
   gap: 18px;
 }
 
+.game-shell {
+  width: 100%;
+  min-height: 100vh;
+}
+
 .seagate-shell {
   position: relative;
   width: 100%;

@@ -43,9 +43,8 @@ init();
 
 async function init() {
   await ensureProfile();
-  showGameScreen(new URL(location.href).searchParams.get('start') === '1');
+  showGameScreen(true);
   renderProfile();
-  renderSensorDebug('页面加载');
   connect();
   bindEvents();
   startMotionListening();
@@ -144,17 +143,17 @@ function connect() {
 }
 
 function bindEvents() {
-  els.startEntry.addEventListener('click', () => {
+  els.startEntry?.addEventListener('click', () => {
     showGameScreen(true);
     requestMotionPermission();
   });
-  els.enableMotion.addEventListener('click', requestMotionPermission);
-  els.mockShake.addEventListener('click', () => onShake());
+  els.enableMotion?.addEventListener('click', requestMotionPermission);
+  els.mockShake?.addEventListener('click', () => onShake());
 }
 
 function showGameScreen(visible) {
-  els.landingScreen.classList.toggle('hidden', visible);
-  els.gameScreen.classList.toggle('hidden', !visible);
+  els.landingScreen?.classList.toggle('hidden', visible);
+  els.gameScreen?.classList.toggle('hidden', !visible);
 }
 
 function startMotionListening() {
@@ -181,12 +180,9 @@ function startMotionListening() {
 }
 
 async function requestMotionPermission() {
-  renderSensorDebug('点击授权');
-
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     const result = await DeviceMotionEvent.requestPermission();
     els.hint.textContent = result === 'granted' ? '传感器已开启，比赛开始后用力摇动手机。' : '未获得传感器权限，可尝试刷新或使用安卓/微信环境。';
-    els.sensorStatus.textContent = result === 'granted' ? '传感器状态：已授权，等待数据' : '传感器状态：未授权';
     if (result === 'granted') {
       startMotionListening();
       startGenericAccelerometer();
@@ -198,7 +194,6 @@ async function requestMotionPermission() {
   els.hint.textContent = window.isSecureContext
     ? '传感器监听已开启，比赛开始后用力摇动手机。'
     : '当前是非 HTTPS 局域网页面，部分手机浏览器会直接禁用运动传感器且不弹授权。';
-  els.sensorStatus.textContent = '传感器状态：监听中，等待数据';
   startMotionListening();
   startGenericAccelerometer();
   watchMotionProbe();
@@ -310,8 +305,7 @@ function updateCountdown() {
 function getHint(status) {
   if (status === 'waiting') return '等待大屏开始比赛。请先点击“开启摇一摇权限”。';
   if (status === 'playing') return '全力摇动手机，每一次有效摇动都会实时回传到大屏。';
-  if (hasRedirectedForCurrentRound()) return '比赛结束，已完成本轮问卷跳转，返回后不会重复跳转。';
-  return '比赛结束，5 秒后自动跳转问卷星领奖页面。';
+  return '比赛结束。';
 }
 
 function watchMotionProbe() {
@@ -319,8 +313,6 @@ function watchMotionProbe() {
   setTimeout(() => {
     if (!motionDetected) {
       els.hint.textContent = '还没有检测到传感器数据。微信/浏览器可能要求 HTTPS 或系统运动权限，请先用“测试摇一次”确认链路。';
-      els.sensorStatus.textContent = '传感器状态：未收到数据';
-      renderSensorDebug('未收到数据');
     }
   }, 2500);
 }
@@ -341,15 +333,9 @@ function startGenericAccelerometer() {
 
       handleMotionVector(current, 'Accelerometer');
     });
-    accelerometer.addEventListener('error', (event) => {
-      els.sensorStatus.textContent = `传感器状态：Accelerometer 错误 ${event.error?.name || 'unknown'}`;
-      renderSensorDebug(`Accelerometer ${event.error?.name || 'error'}`);
-    });
+    accelerometer.addEventListener('error', () => {});
     accelerometer.start();
-  } catch (error) {
-    els.sensorStatus.textContent = `传感器状态：Accelerometer 不可用 ${error.name || ''}`;
-    renderSensorDebug(`Accelerometer unavailable`);
-  }
+  } catch {}
 }
 
 function handleMotionVector(current, source) {
@@ -366,7 +352,6 @@ function handleMotionVector(current, source) {
   const elapsed = Math.max(16, current.time - lastMotion.time);
   const speed = (diff / elapsed) * 1000;
   lastMotion = current;
-  els.sensorStatus.textContent = `传感器状态：${source} 已收到数据，加速度变化 ${diff.toFixed(1)}，速度 ${speed.toFixed(0)}`;
 
   if (diff > 3.2 || peak > 1.8 || speed > 180) onShake();
 }
@@ -392,7 +377,6 @@ function handleRotationRate(rotation, now) {
   lastRotation = current;
 
   if (diff > 60 || peak > 100) {
-    els.sensorStatus.textContent = `传感器状态：DeviceMotion 已收到数据，角速度变化 ${diff.toFixed(0)}`;
     onShake();
   }
 }
@@ -408,14 +392,6 @@ function getAcceleration(event) {
 
 function getRotationRate(event) {
   return hasRotationValue(event.rotationRate) ? event.rotationRate : null;
-}
-
-function renderSensorDebug(reason) {
-  const hasPermissionApi = typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
-  const hasDeviceMotion = 'DeviceMotionEvent' in window;
-  const hasAccelerometer = 'Accelerometer' in window;
-  const secure = window.isSecureContext ? '安全' : '非安全';
-  els.sensorDebug.textContent = `传感器诊断：${reason}；${secure}上下文；DeviceMotion=${hasDeviceMotion ? '支持' : '不支持'}；授权API=${hasPermissionApi ? '支持' : '不支持'}；Accelerometer=${hasAccelerometer ? '支持' : '不支持'}`;
 }
 
 function hasAxisValue(value) {
