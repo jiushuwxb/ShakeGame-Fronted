@@ -26,6 +26,10 @@ body {
     linear-gradient(145deg, #030914 0%, #081b2e 54%, #020814 100%);
 }
 
+.hidden {
+  display: none !important;
+}
+
 body::before {
   position: fixed;
   inset: 0;
@@ -70,6 +74,220 @@ button.danger {
   width: min(100%, 520px);
   min-height: 100vh;
   margin: 0 auto;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.seagate-shell {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  padding: 0;
+  background: #04110f;
+}
+
+.landing-screen {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.24) 48%, rgba(0, 0, 0, 0.72) 100%),
+    url("./assets/back.png") center top / cover no-repeat,
+    linear-gradient(180deg, #08130f 0%, #04110f 100%);
+}
+
+.landing-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(75, 255, 206, 0.22), transparent 28%),
+    radial-gradient(circle at 50% 66%, rgba(76, 210, 255, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.58) 100%);
+}
+
+.landing-inner {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: 28px 22px 34px;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.landing-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.landing-logo-mark {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  color: #9cff4e;
+  font-size: 22px;
+  font-weight: 900;
+  border-radius: 50%;
+  border: 2px solid rgba(156, 255, 78, 0.9);
+}
+
+.landing-logo-text {
+  letter-spacing: 0.28em;
+  font-size: 15px;
+}
+
+.landing-copy {
+  padding-top: 48px;
+  text-align: center;
+}
+
+.landing-title {
+  font-size: clamp(36px, 10vw, 56px);
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.landing-subtitle {
+  margin-top: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #eefaf7;
+  text-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+.product-grid {
+  align-self: end;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 0 4px 34px;
+}
+
+.product-card {
+  position: relative;
+  min-height: 178px;
+  border-radius: 26px;
+  border: 1px solid rgba(132, 255, 206, 0.26);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.product-card::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 28%, rgba(0, 0, 0, 0.28));
+}
+
+.product-card-blue {
+  background: radial-gradient(circle at 50% 50%, rgba(88, 255, 154, 0.18), transparent 52%), linear-gradient(180deg, #0d3727 0%, #071412 100%);
+}
+
+.product-card-dark {
+  background: radial-gradient(circle at 50% 42%, rgba(81, 255, 171, 0.18), transparent 36%), linear-gradient(180deg, #163826 0%, #091211 100%);
+}
+
+.product-card-orange {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 188, 98, 0.25), transparent 50%), linear-gradient(180deg, #203434 0%, #0d1717 100%);
+}
+
+.product-device {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 82%;
+  height: 68%;
+  border-radius: 28px;
+}
+
+.product-device-blue {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.14), transparent 20%),
+    linear-gradient(180deg, #3349be 0%, #29398a 100%);
+  box-shadow: inset 0 0 0 12px #2f44aa, inset 0 0 0 2px rgba(14, 24, 86, 0.55);
+}
+
+.product-device-orange {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.2), transparent 18%),
+    linear-gradient(180deg, #ffffff 0%, #ece7df 100%);
+  box-shadow: inset 0 0 0 14px #f3932b, inset 0 0 0 2px rgba(160, 90, 11, 0.45);
+}
+
+.product-center-copy {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  right: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.product-center-copy strong {
+  font-size: 28px;
+  color: #42d2b7;
+}
+
+.product-center-copy span {
+  font-size: 12px;
+  color: #cfe9e2;
+}
+
+.product-mini-row {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+}
+
+.product-mini {
+  width: 22px;
+  height: 38px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+}
+
+.product-mini-green { background: linear-gradient(180deg, #71ff83, #10361d); }
+.product-mini-black { background: linear-gradient(180deg, #1f2327, #090909); }
+.product-mini-blue { background: linear-gradient(180deg, #5abfff, #17487d); }
+
+.start-entry {
+  align-self: end;
+  justify-self: center;
+  width: min(100%, 252px);
+  margin-bottom: 54px;
+  padding: 16px 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: #fff;
+  font-size: 18px;
+  background: linear-gradient(90deg, #84d94f 0%, #12b8b9 100%);
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 28px rgba(17, 182, 174, 0.3);
+}
+
+.start-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.start-label {
+  letter-spacing: 0.08em;
+  font-weight: 900;
+}
+
+.game-screen {
   padding: 22px;
   display: flex;
   flex-direction: column;

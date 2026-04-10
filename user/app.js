@@ -6,6 +6,9 @@ const stateText = {
 };
 
 const els = {
+  landingScreen: document.querySelector('#landingScreen'),
+  gameScreen: document.querySelector('#gameScreen'),
+  startEntry: document.querySelector('#startEntry'),
   status: document.querySelector('#status'),
   countdown: document.querySelector('#countdown'),
   count: document.querySelector('#count'),
@@ -40,6 +43,7 @@ init();
 
 async function init() {
   await ensureProfile();
+  showGameScreen(new URL(location.href).searchParams.get('start') === '1');
   renderProfile();
   renderSensorDebug('页面加载');
   connect();
@@ -51,8 +55,9 @@ async function init() {
 async function ensureProfile() {
   const url = new URL(location.href);
   const code = url.searchParams.get('code');
+  const needsWechatOAuth = isWechat() && !url.searchParams.has('mock');
 
-  if (player?.id && player?.nickname) return;
+  if (player?.id && player?.nickname && (!needsWechatOAuth || player.source === 'wechat')) return;
 
   if (code) {
     try {
@@ -62,10 +67,12 @@ async function ensureProfile() {
         player = {
           id: user.openid || makeId(),
           nickname: user.nickname || '微信用户',
-          avatar: user.avatar || ''
+          avatar: user.avatar || '',
+          source: 'wechat'
         };
         savePlayer(player);
         url.searchParams.delete('code');
+        url.searchParams.delete('state');
         history.replaceState(null, '', url.toString());
         return;
       }
@@ -74,7 +81,7 @@ async function ensureProfile() {
     }
   }
 
-  if (isWechat() && !url.searchParams.has('mock')) {
+  if (needsWechatOAuth) {
     try {
       const response = await fetch(`${resolveApiBaseUrl()}/api/wechat/authorize-url?redirectUri=${encodeURIComponent(location.href)}`);
       if (response.ok) {
@@ -90,7 +97,8 @@ async function ensureProfile() {
   player = {
     id: localStorage.getItem('shake_guest_id') || makeId(),
     nickname: `现场玩家${Math.floor(Math.random() * 900 + 100)}`,
-    avatar: ''
+    avatar: '',
+    source: 'guest'
   };
   localStorage.setItem('shake_guest_id', player.id);
   savePlayer(player);
@@ -136,8 +144,17 @@ function connect() {
 }
 
 function bindEvents() {
+  els.startEntry.addEventListener('click', () => {
+    showGameScreen(true);
+    requestMotionPermission();
+  });
   els.enableMotion.addEventListener('click', requestMotionPermission);
   els.mockShake.addEventListener('click', () => onShake());
+}
+
+function showGameScreen(visible) {
+  els.landingScreen.classList.toggle('hidden', visible);
+  els.gameScreen.classList.toggle('hidden', !visible);
 }
 
 function startMotionListening() {

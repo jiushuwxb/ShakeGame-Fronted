@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>希捷极速传输挑战赛</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="mobile-shell seagate-shell">
+      <section class="landing-screen" id="landingScreen">
+        <div class="landing-overlay"></div>
+        <div class="landing-inner">
+          <div class="landing-logo">
+            <span class="landing-logo-mark">S</span>
+            <span class="landing-logo-text">SEAGATE</span>
+          </div>
+          <section class="landing-copy">
+            <h1 class="landing-title">大容远致<br>智启视听新境</h1>
+            <p class="landing-subtitle">Mass Capacity, Smart Media Future</p>
+          </section>
+          <section class="product-grid" aria-label="产品展示">
+            <article class="product-card product-card-blue">
+              <div class="product-device product-device-blue"></div>
+            </article>
+            <article class="product-card product-card-dark">
+              <div class="product-center-copy">
+                <strong>32TB</strong>
+                <span>海量存储</span>
+              </div>
+              <div class="product-mini-row">
+                <span class="product-mini product-mini-green"></span>
+                <span class="product-mini product-mini-black"></span>
+                <span class="product-mini product-mini-blue"></span>
+              </div>
+            </article>
+            <article class="product-card product-card-orange">
+              <div class="product-device product-device-orange"></div>
+            </article>
+          </section>
+          <button class="start-entry" id="startEntry" type="button">
+            <span class="start-icon">⏻</span>
+            <span class="start-label">START</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="game-screen hidden" id="gameScreen">
+        <section class="hero-card">
+          <div class="brand">Seagate Challenge</div>
+          <h1>极速传输<br>摇一摇挑战</h1>
+          <p class="subtitle">模拟硬盘高速传输，60 秒内摇出你的数据吞吐峰值。</p>
+          <div class="profile">
+            <img id="avatar" class="avatar" alt="头像">
+            <div>
+              <strong id="nickname">微信用户</strong>
+              <p class="hint" id="rank">--</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="status-card" id="statusCard">
+          <div class="status-line">
+            <span class="pill" id="status">连接中</span>
+            <strong>倒计时 <span id="countdown">--</span>s</strong>
+          </div>
+          <div class="count" id="count">0</div>
+          <p class="hint" id="hint">正在连接现场实时服务...</p>
+          <div class="actions">
+            <button id="enableMotion">开启摇一摇权限</button>
+            <button class="secondary" id="mockShake">测试摇一次</button>
+          </div>
+          <p class="hint sensor-status" id="sensorStatus">传感器状态：未开启</p>
+          <p class="hint sensor-status" id="sensorDebug">传感器诊断：等待检测</p>
+        </section>
+
+        <section class="rank-card">
+          <h2>实时榜单</h2>
+          <div class="rank-list" id="ranking"></div>
+        </section>
+      </section>
+    </main>
+    <script src="./config.js?v=20260410-home1"></script>
+    <script src="./app.js?v=20260410-home1"></script>
+  </body>
+</html>

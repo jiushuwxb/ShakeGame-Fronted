@@ -3,45 +3,38 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>希捷极速传输挑战赛</title>
-    <link rel="stylesheet" href="./styles.css">
+    <title>希捷活动落地页</title>
+    <link rel="stylesheet" href="./index.css">
   </head>
   <body>
-    <main class="mobile-shell">
-      <section class="hero-card">
-        <div class="brand">Seagate Challenge</div>
-        <h1>极速传输<br>摇一摇挑战</h1>
-        <p class="subtitle">模拟硬盘高速传输，60 秒内摇出你的数据吞吐峰值。</p>
-        <div class="profile">
-          <img id="avatar" class="avatar" alt="头像">
-          <div>
-            <strong id="nickname">微信用户</strong>
-            <p class="hint" id="rank">--</p>
+    <main class="page-shell">
+      <section class="hero">
+        <div class="hero-mask"></div>
+        <div class="hero-bottom-fade"></div>
+
+        <div class="hero-content">
+          <header class="brand-row" aria-label="Seagate">
+            <img src="./assets/logo.png" alt="希捷logo" class="brand-logo">
+          </header>
+
+          <section class="headline">
+            <h1>大容远致<br>智启视听新境</h1>
+            <p>Mass Capacity, Smart Media Future</p>
+          </section>
+
+          <section class="products" aria-label="产品展示">
+            <img class="product-card product-left" src="./assets/prod1.png" alt="希捷产品图 1">
+            <img class="product-card product-center" src="./assets/prod2.png" alt="希捷产品图 2">
+            <img class="product-card product-right" src="./assets/prod3.png" alt="希捷产品图 3">
+          </section>
+
+          <div class="start-button is-locked" role="button" aria-disabled="true" tabindex="-1">
+            <img src="./assets/button.png" alt="开始按钮" class="start-button-icon">
           </div>
         </div>
       </section>
-
-      <section class="status-card" id="statusCard">
-        <div class="status-line">
-          <span class="pill" id="status">连接中</span>
-          <strong>倒计时 <span id="countdown">--</span>s</strong>
-        </div>
-        <div class="count" id="count">0</div>
-        <p class="hint" id="hint">正在连接现场实时服务...</p>
-        <div class="actions">
-          <button id="enableMotion">开启摇一摇权限</button>
-          <button class="secondary" id="mockShake">测试摇一次</button>
-        </div>
-        <p class="hint sensor-status" id="sensorStatus">传感器状态：未开启</p>
-        <p class="hint sensor-status" id="sensorDebug">传感器诊断：等待检测</p>
-      </section>
-
-      <section class="rank-card">
-        <h2>实时榜单</h2>
-        <div class="rank-list" id="ranking"></div>
-      </section>
     </main>
-    <script src="./config.js?v=20260409-domain1"></script>
-    <script src="./app.js?v=20260409-domain1"></script>
+    <script src="./config.js"></script>
+    <script src="./index.js"></script>
   </body>
 </html>
