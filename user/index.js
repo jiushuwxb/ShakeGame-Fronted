@@ -5,6 +5,7 @@ const els = {
 };
 
 let player = loadPlayer();
+const debugEnabled = new URL(location.href).searchParams.has('debugAuth');
 
 init();
 
@@ -34,13 +35,28 @@ async function ensureProfile() {
   const code = url.searchParams.get('code');
   const needsWechatOAuth = isWechat() && !url.searchParams.has('mock');
 
+  debugAuth('ensureProfile:start', {
+    href: location.href,
+    userAgent: navigator.userAgent,
+    isWechat: isWechat(),
+    hasMock: url.searchParams.has('mock'),
+    code,
+    needsWechatOAuth,
+    player
+  });
+
   if (player?.id && player?.nickname && (!needsWechatOAuth || player.source === 'wechat')) return;
 
   if (code) {
     try {
+      debugAuth('wechatUser:request', {
+        url: `${resolveApiBaseUrl()}/api/wechat/user?code=${encodeURIComponent(code)}`
+      });
       const response = await fetch(`${resolveApiBaseUrl()}/api/wechat/user?code=${encodeURIComponent(code)}`);
+      debugAuth('wechatUser:response', { ok: response.ok, status: response.status });
       if (response.ok) {
         const user = await response.json();
+        debugAuth('wechatUser:data', user);
         player = {
           id: user.openid || makeId(),
           nickname: user.nickname || '微信用户',
@@ -60,17 +76,23 @@ async function ensureProfile() {
 
   if (needsWechatOAuth) {
     try {
+      const authorizeUrl = `${resolveApiBaseUrl()}/api/wechat/authorize-url?redirectUri=${encodeURIComponent(location.href)}`;
+      debugAuth('authorizeUrl:request', { url: authorizeUrl });
       const response = await fetch(
-        `${resolveApiBaseUrl()}/api/wechat/authorize-url?redirectUri=${encodeURIComponent(location.href)}`
+        authorizeUrl
       );
+      debugAuth('authorizeUrl:response', { ok: response.ok, status: response.status });
       if (response.ok) {
         const data = await response.json();
+        debugAuth('authorizeUrl:data', data);
         if (data.url) {
+          debugAuth('authorizeUrl:redirect', { to: data.url });
           location.replace(data.url);
           return;
         }
       }
     } catch (error) {
+      debugAuth('authorizeUrl:error', { message: error.message, stack: error.stack });
       console.warn('WeChat authorize-url request failed, fallback to guest.', error);
     }
   }
@@ -83,6 +105,7 @@ async function ensureProfile() {
   };
   localStorage.setItem('shake_guest_id', player.id);
   savePlayer(player);
+  debugAuth('fallback:guest', player);
 }
 
 function loadPlayer() {
@@ -115,6 +138,21 @@ function setStartButtonReady(ready) {
   els.startButton.classList.toggle('is-locked', !ready);
   els.startButton.setAttribute('aria-disabled', ready ? 'false' : 'true');
   els.startButton.tabIndex = ready ? 0 : -1;
+}
+
+function debugAuth(stage, payload) {
+  if (!debugEnabled) return;
+  const text = `[auth-debug] ${stage}\n${safeStringify(payload)}`;
+  console.log(text);
+  setTimeout(() => alert(text), 0);
+}
+
+function safeStringify(value) {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }
 
 function makeId() {
