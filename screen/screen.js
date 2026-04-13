@@ -1,4 +1,4 @@
-const config = window.SHAKE_CONFIG;
+﻿const config = window.SHAKE_CONFIG;
 const stateText = {
   waiting: '等待开始',
   playing: '比赛进行中',
@@ -6,18 +6,26 @@ const stateText = {
 };
 
 const els = {
-  title: document.querySelector('#title'),
-  brandLine: document.querySelector('#brandLine'),
-  status: document.querySelector('#status'),
-  timer: document.querySelector('#timer'),
-  total: document.querySelector('#total'),
-  leaderboard: document.querySelector('#leaderboard'),
-  adminToken: document.querySelector('#adminToken'),
-  qrcode: document.querySelector('#qrcode'),
-  start: document.querySelector('#start'),
-  end: document.querySelector('#end'),
-  reset: document.querySelector('#reset')
+  screenReady: document.querySelector('#screenReady'),
+  screenLive: document.querySelector('#screenLive'),
+  screenEnd: document.querySelector('#screenEnd'),
+  readyTotal: document.querySelector('#readyTotal'),
+  readyPlayers: document.querySelector('#readyPlayers'),
+  liveStatus: document.querySelector('#liveStatus'),
+  liveTimer: document.querySelector('#liveTimer'),
+  liveTotal: document.querySelector('#liveTotal'),
+  liveLeaderboard: document.querySelector('#liveLeaderboard'),
+  endLeaderboard: document.querySelector('#endLeaderboard'),
+  liveAdminToken: document.querySelector('#liveAdminToken'),
+  endReset: document.querySelector('#endReset'),
+  liveStart: document.querySelector('#liveStart'),
+  liveEnd: document.querySelector('#liveEnd'),
+  liveReset: document.querySelector('#liveReset')
 };
+
+const LANE_SCORE_MAX = 999;
+const LANE_FILL_MAX_HEIGHT = 174;
+const LANE_FILL_MIN_HEIGHT = 16;
 
 let ws;
 let snapshot = null;
@@ -27,10 +35,9 @@ init();
 
 function init() {
   const url = new URL(location.href);
-  els.title.textContent = config.activityTitle;
-  els.brandLine.textContent = config.brandLine;
-  els.adminToken.value = url.searchParams.get('adminToken') || localStorage.getItem('shake_admin_token') || '';
-  renderQrCode(new URL('../user/index.html', location.href).toString());
+  const adminToken = url.searchParams.get('adminToken') || localStorage.getItem('shake_admin_token') || '';
+  if (els.liveAdminToken) els.liveAdminToken.value = adminToken;
+
   connect();
   bindEvents();
 }
@@ -56,50 +63,127 @@ function connect() {
 }
 
 function bindEvents() {
-  els.adminToken.addEventListener('change', () => {
-    localStorage.setItem('shake_admin_token', els.adminToken.value.trim());
+  els.liveAdminToken?.addEventListener('change', () => {
+    localStorage.setItem('shake_admin_token', els.liveAdminToken.value.trim());
   });
-  els.start.addEventListener('click', () => sendAdmin('admin_start'));
-  els.end.addEventListener('click', () => sendAdmin('admin_end'));
-  els.reset.addEventListener('click', () => {
+
+  els.liveStart?.addEventListener('click', () => sendAdmin('admin_start'));
+  els.liveEnd?.addEventListener('click', () => sendAdmin('admin_end'));
+  els.liveReset?.addEventListener('click', () => {
     if (confirm('确认重置活动并清空所有玩家？')) sendAdmin('admin_reset');
+  });
+  els.endReset?.addEventListener('click', () => {
+    if (confirm('确认重置活动并让所有玩家返回首页？')) sendAdmin('admin_reset');
   });
 }
 
 function sendAdmin(type) {
-  localStorage.setItem('shake_admin_token', els.adminToken.value.trim());
+  const token = (els.liveAdminToken?.value || '').trim();
+  localStorage.setItem('shake_admin_token', token);
   if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type, token: els.adminToken.value.trim() }));
+    ws.send(JSON.stringify({ type, token }));
   }
 }
 
 function render() {
-  const onlinePlayers = snapshot.players.filter((player) => player.online);
+  if (!snapshot) return;
 
-  els.status.textContent = stateText[snapshot.status] || snapshot.status;
-  els.total.textContent = `${onlinePlayers.length}/${snapshot.maxPlayers}`;
-  renderLeaderboard(onlinePlayers.slice(0, 10));
+  const status = snapshot.status || 'waiting';
+  const players = status === 'ended'
+    ? (snapshot.players || [])
+    : (snapshot.players || []).filter((player) => player.online);
+
+  els.screenReady?.classList.toggle('hidden', status !== 'waiting');
+  els.screenLive?.classList.toggle('hidden', status !== 'playing');
+  els.screenEnd?.classList.toggle('hidden', status !== 'ended');
+
+  renderReadyPlayers(players);
+  renderLiveRace(players.slice(0, 10), status === 'playing');
+  renderEndLeaderboard(players.slice(0, 5), status === 'ended');
+
+  if (els.liveStatus) els.liveStatus.textContent = stateText[status] || status;
+  if (els.liveTotal) {
+    els.liveTotal.textContent = `${players.length}/${snapshot.maxPlayers || 10}`;
+  }
+
   startCountdown();
 }
 
-function renderLeaderboard(players) {
-  if (!players.length) {
-    els.leaderboard.innerHTML = '<div class="empty">等待玩家扫码加入</div>';
+function renderReadyPlayers(players) {
+  if (!els.readyPlayers || !els.readyTotal) return;
+
+  els.readyTotal.textContent = String(players.length);
+  els.readyPlayers.innerHTML = players.map((player) => `
+    <div class="screen-ready-player">
+      <img src="./assets/touxiang.png" alt="">
+      <span>${escapeHtml(player.nickname || '现场玩家')}</span>
+    </div>
+  `).join('');
+}
+
+function renderLiveRace(players, isPlaying) {
+  if (!els.liveLeaderboard) return;
+
+  if (!isPlaying) {
+    els.liveLeaderboard.innerHTML = '';
     return;
   }
 
-  const max = Math.max(...players.map((item) => item.count), 1);
-  els.leaderboard.innerHTML = players.map((item, index) => `
-    <div class="leader-row">
-      <div class="rank-no">#${index + 1}</div>
-      <img class="avatar" src="${item.avatar || makeAvatar(item.nickname)}" alt="">
-      <div>
-        <h2>${escapeHtml(item.nickname)}</h2>
-        <div class="bar"><span style="width:${Math.max(3, item.count / max * 100)}%"></span></div>
+  const filledPlayers = Array.from({ length: 10 }, (_, index) => players[index] || {
+    nickname: `${123 + index}用户`,
+    count: 0
+  });
+
+  els.liveLeaderboard.innerHTML = filledPlayers.map((item) => {
+    const displayCount = Math.max(0, Number(item.count) || 0);
+    const ratioCount = Math.min(LANE_SCORE_MAX, displayCount);
+    const fillHeight = displayCount > 0
+      ? Math.max(LANE_FILL_MIN_HEIGHT, Math.round((ratioCount / LANE_SCORE_MAX) * LANE_FILL_MAX_HEIGHT))
+      : 0;
+
+    return `
+      <div class="live-lane">
+        <div class="live-lane-score">+${displayCount}</div>
+        <div class="live-lane-track">
+          <div class="live-lane-fill" style="height:${fillHeight}px"></div>
+        </div>
+        <div class="live-lane-player">
+          <img src="./assets/touxiang.png" alt="">
+          <span>${escapeHtml(item.nickname || '现场玩家')}</span>
+        </div>
       </div>
-      <div class="score">${item.count}</div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
+}
+
+function renderEndLeaderboard(players, isEnded) {
+  if (!els.endLeaderboard) return;
+
+  if (!isEnded) {
+    els.endLeaderboard.innerHTML = '';
+    return;
+  }
+
+  const rankedPlayers = players.slice().sort((a, b) => (Number(b.count) || 0) - (Number(a.count) || 0));
+  const winners = Array.from({ length: 5 }, (_, index) => rankedPlayers[index] || {
+    nickname: `${123 + index}用户`,
+    count: 0
+  });
+
+  els.endLeaderboard.innerHTML = winners.map((item, index) => {
+    const rank = index + 1;
+    const crown = rank === 1 ? './assets/crown.png' : rank <= 3 ? './assets/crown1.png' : '';
+
+    return `
+      <div class="end-player">
+        <div class="end-player-avatar-wrap${rank <= 3 ? ' is-top-three' : ''}">
+          ${crown ? `<img src="${crown}" alt="" class="end-player-crown">` : ''}
+          <img src="./assets/touxiang.png" alt="" class="end-player-avatar">
+        </div>
+        <span class="end-player-name">${escapeHtml(item.nickname || '现场玩家')}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 function startCountdown() {
@@ -109,23 +193,23 @@ function startCountdown() {
 }
 
 function updateCountdown() {
+  if (!els.liveTimer) return;
+
   if (!snapshot || snapshot.status !== 'playing' || !snapshot.endsAt) {
-    els.timer.textContent = snapshot?.status === 'ended' ? '00' : String(Math.round((snapshot?.durationMs || 60000) / 1000));
+    const idleSeconds = snapshot?.status === 'ended' ? 0 : Math.round((snapshot?.durationMs || 60000) / 1000);
+    els.liveTimer.textContent = formatLiveTime(idleSeconds * 1000);
     return;
   }
 
   const remaining = Math.max(0, snapshot.endsAt - Date.now());
-  els.timer.textContent = String(Math.ceil(remaining / 1000)).padStart(2, '0');
+  els.liveTimer.textContent = formatLiveTime(remaining);
 }
 
-function renderQrCode(text) {
-  const encoded = encodeURIComponent(text);
-  els.qrcode.innerHTML = `<img width="130" height="130" alt="手机扫码入口" src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encoded}">`;
-}
-
-function makeAvatar(name) {
-  const label = encodeURIComponent((name || '玩').slice(0, 1));
-  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%231479ff'/%3E%3Cstop offset='1' stop-color='%2330d5ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='120' height='120' rx='28' fill='url(%23g)'/%3E%3Ctext x='50%25' y='58%25' dominant-baseline='middle' text-anchor='middle' font-size='54' fill='white' font-family='Arial'%3E${label}%3C/text%3E%3C/svg%3E`;
+function formatLiveTime(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  return `${minutes}:${seconds}`;
 }
 
 function escapeHtml(value) {

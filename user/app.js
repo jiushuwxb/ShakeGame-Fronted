@@ -9,6 +9,25 @@ const els = {
   landingScreen: document.querySelector('#landingScreen'),
   gameScreen: document.querySelector('#gameScreen'),
   startEntry: document.querySelector('#startEntry'),
+  startLayer: document.querySelector('#startLayer'),
+  startCountdownValue: document.querySelector('#startCountdownValue'),
+  playStatus: document.querySelector('#playStatus'),
+  playCountdown: document.querySelector('#playCountdown'),
+  playCount: document.querySelector('#playCount'),
+  playRank: document.querySelector('#playRank'),
+  playNickname: document.querySelector('#playNickname'),
+  playAvatar: document.querySelector('#playAvatar'),
+  playHint: document.querySelector('#playHint'),
+  resultOverlay: document.querySelector('#resultOverlay'),
+  rankResultClose: document.querySelector('#rankResultClose'),
+  prizeResultClose: document.querySelector('#prizeResultClose'),
+  resultTestButton: document.querySelector('#resultTestButton'),
+  rankResultCard: document.querySelector('#rankResultCard'),
+  prizeResultCard: document.querySelector('#prizeResultCard'),
+  resultTitle: document.querySelector('#resultTitle'),
+  resultRankList: document.querySelector('#resultRankList'),
+  resultAvatar: document.querySelector('#resultAvatar'),
+  prizeAvatar: document.querySelector('#prizeAvatar'),
   status: document.querySelector('#status'),
   countdown: document.querySelector('#countdown'),
   count: document.querySelector('#count'),
@@ -38,6 +57,11 @@ let currentRoundId = null;
 let motionListenerStarted = false;
 let accelerometer = null;
 let lastRotation = null;
+let preStartActive = false;
+let preStartTimer = null;
+let resultShownForRound = null;
+let prizePendingForRound = null;
+let prizeSwitchTimer = null;
 
 init();
 
@@ -47,6 +71,7 @@ async function init() {
   renderProfile();
   connect();
   bindEvents();
+  prepareStartEntry();
   startMotionListening();
   startGenericAccelerometer();
 }
@@ -108,7 +133,7 @@ function connect() {
   ws = new WebSocket(wsUrl);
 
   ws.addEventListener('open', () => {
-    els.hint.textContent = '实时服务已连接，等待比赛开始。';
+    setTextContent([els.hint], '实时服务已连接，等待比赛开始。');
     ws.send(JSON.stringify({ type: 'join_player', player }));
   });
 
@@ -128,17 +153,17 @@ function connect() {
     }
 
     if (message.type === 'join_rejected') {
-      els.hint.textContent = message.reason;
+      setTextContent([els.hint], message.reason);
     }
   });
 
   ws.addEventListener('close', () => {
-    els.hint.textContent = `连接已断开，正在重连：${wsUrl}`;
+    setTextContent([els.hint], `连接已断开，正在重连：${wsUrl}`);
     setTimeout(connect, 1200);
   });
 
   ws.addEventListener('error', () => {
-    els.hint.textContent = `实时连接失败，请确认手机能访问 ${resolveApiBaseUrl()}/health`;
+    setTextContent([els.hint], `实时连接失败，请确认手机能访问 ${resolveApiBaseUrl()}/health`);
   });
 }
 
@@ -152,11 +177,215 @@ function bindEvents() {
   });
   els.enableMotion?.addEventListener('click', requestMotionPermission);
   els.mockShake?.addEventListener('click', () => onShake());
+  els.resultTestButton?.addEventListener('click', showTestResultCards);
+  els.rankResultClose?.addEventListener('click', closeRankResultCard);
+  els.prizeResultClose?.addEventListener('click', closePrizeResultCard);
 }
 
 function showGameScreen(visible) {
   els.landingScreen?.classList.toggle('hidden', visible);
   els.gameScreen?.classList.toggle('hidden', !visible);
+}
+
+function setTextContent(nodes, value) {
+  nodes.filter(Boolean).forEach((node) => {
+    node.textContent = value;
+  });
+}
+
+function setImageSource(nodes, value) {
+  nodes.filter(Boolean).forEach((node) => {
+    node.src = value;
+  });
+}
+
+function formatScore(value) {
+  return `+${value}分`;
+}
+
+function formatCountdown(ms) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
+
+function hideResultOverlay() {
+  if (prizeSwitchTimer) {
+    clearTimeout(prizeSwitchTimer);
+    prizeSwitchTimer = null;
+  }
+  els.resultOverlay?.classList.add('hidden');
+  els.rankResultCard?.classList.add('hidden');
+  els.prizeResultCard?.classList.add('hidden');
+}
+
+function syncResultOverlayVisibility() {
+  const hasVisibleCard =
+    !els.rankResultCard?.classList.contains('hidden') ||
+    !els.prizeResultCard?.classList.contains('hidden');
+
+  els.resultOverlay?.classList.toggle('hidden', !hasVisibleCard);
+}
+
+function closeRankResultCard() {
+  if (prizePendingForRound === snapshot?.endsAt || prizePendingForRound === 'test') {
+    prizePendingForRound = null;
+    showPrizeResultCard();
+  }
+  els.rankResultCard?.classList.add('hidden');
+  syncResultOverlayVisibility();
+}
+
+function closePrizeResultCard() {
+  if (prizeSwitchTimer) {
+    clearTimeout(prizeSwitchTimer);
+    prizeSwitchTimer = null;
+  }
+  prizePendingForRound = null;
+  els.prizeResultCard?.classList.add('hidden');
+  syncResultOverlayVisibility();
+}
+
+function showRankResultCard(players, rank) {
+  if (els.resultTitle) {
+    els.resultTitle.textContent = `恭喜，您获得第 ${rank} 名！`;
+  }
+  if (els.resultRankList) {
+    els.resultRankList.innerHTML = players.slice(0, 10).map((item, index) => `
+      <div class="result-rank-row">
+        <span>${index + 1}</span>
+        <div class="result-rank-player">
+          <img src="./assets/touxiang.png" alt="">
+          <span>${escapeHtml(maskName(item.nickname || '现场玩家'))}</span>
+        </div>
+        <span class="result-rank-score">${item.count}</span>
+      </div>
+    `).join('');
+  }
+  els.rankResultCard?.classList.remove('hidden');
+  els.resultOverlay?.classList.remove('hidden');
+}
+
+function showPrizeResultCard() {
+  if (prizeSwitchTimer) {
+    clearTimeout(prizeSwitchTimer);
+    prizeSwitchTimer = null;
+  }
+  els.prizeResultCard?.classList.remove('hidden');
+  els.rankResultCard?.classList.remove('hidden');
+  els.resultOverlay?.classList.remove('hidden');
+}
+
+function showResultOverlay(players, rank) {
+  if (!snapshot?.endsAt) return;
+  if (resultShownForRound === snapshot.endsAt) return;
+  resultShownForRound = snapshot.endsAt;
+
+  setImageSource([els.resultAvatar, els.prizeAvatar], './assets/touxiang.png');
+  showRankResultCard(players, rank > 0 ? rank : players.length + 1);
+
+  if (rank > 0 && rank <= 5) {
+    prizePendingForRound = snapshot.endsAt;
+    prizeSwitchTimer = setTimeout(() => {
+      if (prizePendingForRound === snapshot?.endsAt) {
+        showPrizeResultCard();
+        prizePendingForRound = null;
+      }
+    }, 2200);
+    return;
+  }
+
+  prizePendingForRound = null;
+}
+
+function showTestResultCards() {
+  showGameScreen(true);
+  prizePendingForRound = 'test';
+  if (prizeSwitchTimer) {
+    clearTimeout(prizeSwitchTimer);
+    prizeSwitchTimer = null;
+  }
+
+  const demoPlayers = Array.from({ length: 10 }, (_, index) => ({
+    nickname: `187****43${String(50 + index).padStart(2, '0')}`,
+    count: 88888 - index * 111,
+    online: true
+  }));
+
+  setImageSource([els.resultAvatar, els.prizeAvatar], './assets/touxiang.png');
+  showRankResultCard(demoPlayers, 1);
+
+  prizeSwitchTimer = setTimeout(() => {
+    if (prizePendingForRound === 'test') {
+      showPrizeResultCard();
+      prizePendingForRound = null;
+    }
+  }, 1800);
+}
+
+function maskName(name) {
+  const value = String(name || '');
+  if (value.length <= 2) return value;
+  return `${value.slice(0, 3)}****${value.slice(-4)}`;
+}
+
+function prepareStartEntry() {
+  if (!els.startEntry || els.gameScreen && !els.gameScreen.classList.contains('hidden')) return;
+  const replacement = els.startEntry.cloneNode(true);
+  els.startEntry.replaceWith(replacement);
+  els.startEntry = replacement;
+  els.startEntry.addEventListener('click', startPreGameSequence);
+}
+
+function startPreGameSequence() {
+  if (preStartActive) return;
+  preStartActive = true;
+
+  const entryHint = document.querySelector('#entryHint');
+  if (els.startEntry) els.startEntry.disabled = true;
+  els.landingScreen?.classList.add('is-starting');
+  els.startLayer?.setAttribute('aria-hidden', 'false');
+  updatePreStartCountdown(3);
+
+  setTextContent([els.hint], '正在开启传感器，请准备开始游戏。');
+  if (entryHint) entryHint.textContent = '3';
+
+  requestMotionPermission().catch(() => {});
+
+  const steps = [3, 2, 1, 0];
+  let index = 0;
+
+  if (preStartTimer) clearInterval(preStartTimer);
+  preStartTimer = setInterval(() => {
+    index += 1;
+    const value = steps[index];
+
+    if (typeof value !== 'number') {
+      clearInterval(preStartTimer);
+      preStartTimer = null;
+      finishPreGameSequence();
+      return;
+    }
+
+    updatePreStartCountdown(value);
+    if (entryHint) entryHint.textContent = value === 0 ? 'GO' : String(value);
+  }, 1000);
+}
+
+function updatePreStartCountdown(value) {
+  if (!els.startCountdownValue) return;
+  const isGo = value === 0;
+  els.startCountdownValue.textContent = isGo ? 'GO' : String(value);
+  els.startCountdownValue.classList.toggle('is-go', isGo);
+}
+
+function finishPreGameSequence() {
+  const entryHint = document.querySelector('#entryHint');
+  els.startLayer?.setAttribute('aria-hidden', 'true');
+  els.landingScreen?.classList.remove('is-starting');
+  if (entryHint) entryHint.textContent = '游戏开始';
+  showGameScreen(true);
 }
 
 function startMotionListening() {
@@ -185,7 +414,7 @@ function startMotionListening() {
 async function requestMotionPermission() {
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
     const result = await DeviceMotionEvent.requestPermission();
-    els.hint.textContent = result === 'granted' ? '传感器已开启，比赛开始后用力摇动手机。' : '未获得传感器权限，可尝试刷新或使用安卓/微信环境。';
+    setTextContent([els.hint], result === 'granted' ? '传感器已开启，比赛开始后用力摇动手机。' : '未获得传感器权限，可尝试刷新或使用安卓/微信环境。');
     if (result === 'granted') {
       startMotionListening();
       startGenericAccelerometer();
@@ -194,9 +423,9 @@ async function requestMotionPermission() {
     return;
   }
 
-  els.hint.textContent = window.isSecureContext
+  setTextContent([els.hint], window.isSecureContext
     ? '传感器监听已开启，比赛开始后用力摇动手机。'
-    : '当前是非 HTTPS 局域网页面，部分手机浏览器会直接禁用运动传感器且不弹授权。';
+    : '当前是非 HTTPS 局域网页面，部分手机浏览器会直接禁用运动传感器且不弹授权。');
   startMotionListening();
   startGenericAccelerometer();
   watchMotionProbe();
@@ -210,7 +439,10 @@ function onShake() {
   lastShakeAt = now;
 
   localCount += 1;
-  els.count.textContent = localCount;
+  setTextContent([els.count, els.playCount], formatScore(localCount));
+  if (els.playRank) {
+    els.playRank.textContent = formatScore(localCount);
+  }
 
   if (ws?.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type: 'shake', delta: 1 }));
@@ -227,10 +459,18 @@ function syncFromSnapshot() {
   const current = snapshot.players.find((item) => item.id === player.id);
   const onlineRank = onlinePlayers.findIndex((item) => item.id === player.id) + 1;
 
+  if (snapshot.status === 'waiting' && !current) {
+    resetPlayerGameState();
+    location.replace('./index.html');
+    return;
+  }
+
   if (nextRoundId && nextRoundId !== currentRoundId) {
     currentRoundId = nextRoundId;
     localCount = current?.count || 0;
     lastShakeAt = 0;
+    prizePendingForRound = null;
+    hideResultOverlay();
   }
 
   if (snapshot.status !== 'playing' && currentRoundId) {
@@ -239,18 +479,27 @@ function syncFromSnapshot() {
 
   if (current) {
     localCount = snapshot.status === 'playing' ? Math.max(localCount, current.count) : current.count;
-    els.rank.textContent = onlineRank > 0 ? `第 ${onlineRank} 名` : '--';
+    if (els.rank) {
+      els.rank.textContent = onlineRank > 0 ? `第 ${onlineRank} 名` : '--';
+    }
+    if (els.playRank) {
+      els.playRank.textContent = formatScore(localCount);
+    }
   }
 
-  els.status.textContent = stateText[snapshot.status] || snapshot.status;
-  els.count.textContent = localCount;
+  setTextContent([els.status, els.playStatus], stateText[snapshot.status] || snapshot.status);
+  setTextContent([els.count, els.playCount], formatScore(localCount));
+  if (els.playRank) {
+    els.playRank.textContent = formatScore(localCount);
+  }
   els.statusCard.classList.toggle('is-ended', snapshot.status === 'ended');
-  els.hint.textContent = getHint(snapshot.status);
+  setTextContent([els.hint, els.playHint], getHint(snapshot.status));
 
   renderRanking(onlinePlayers.slice(0, 5));
   startCountdown();
 
   if (snapshot.status === 'ended') {
+    showResultOverlay(onlinePlayers, onlineRank);
     if (redirectScheduled) return;
     if (hasRedirectedForCurrentRound()) return;
     redirectScheduled = true;
@@ -260,12 +509,36 @@ function syncFromSnapshot() {
     // }, 5000);
   } else {
     redirectScheduled = false;
+    if (snapshot.status === 'waiting') {
+      resultShownForRound = null;
+      prizePendingForRound = null;
+      hideResultOverlay();
+    }
   }
 }
 
+function resetPlayerGameState() {
+  localCount = 0;
+  lastShakeAt = 0;
+  currentRoundId = null;
+  redirectScheduled = false;
+  resultShownForRound = null;
+  prizePendingForRound = null;
+  setTextContent([els.count, els.playCount], formatScore(0));
+  if (els.rank) els.rank.textContent = '--';
+  if (els.playRank) els.playRank.textContent = formatScore(0);
+  hideResultOverlay();
+}
+
 function renderProfile() {
-  els.nickname.textContent = player.nickname;
-  els.avatar.src = player.avatar || makeAvatar(player.nickname);
+  setTextContent([els.nickname, els.playNickname], player.nickname);
+  if (els.rank) {
+    els.rank.textContent = '--';
+  }
+  if (els.playRank) {
+    els.playRank.textContent = formatScore(localCount);
+  }
+  setImageSource([els.avatar, els.playAvatar], './assets/touxiang.png');
 }
 
 function renderRanking(players) {
@@ -296,26 +569,27 @@ function startCountdown() {
 
 function updateCountdown() {
   if (!snapshot || snapshot.status !== 'playing' || !snapshot.endsAt) {
-    els.countdown.textContent = snapshot?.status === 'ended' ? '00' : '--';
+    const idleValue = snapshot?.status === 'ended' ? '00:00' : '--:--';
+    setTextContent([els.countdown, els.playCountdown], idleValue);
     return;
   }
 
   const serverNow = Date.now() + clockOffsetMs;
   const remaining = Math.max(0, snapshot.endsAt - serverNow);
-  els.countdown.textContent = String(Math.ceil(remaining / 1000)).padStart(2, '0');
+  setTextContent([els.countdown, els.playCountdown], formatCountdown(remaining));
 }
 
 function getHint(status) {
-  if (status === 'waiting') return '等待大屏开始比赛。请先点击“开启摇一摇权限”。';
-  if (status === 'playing') return '全力摇动手机，每一次有效摇动都会实时回传到大屏。';
-  return '比赛结束。';
+  if (status === 'waiting') return '游戏还未开始，请稍后！';
+  if (status === 'playing') return '游戏进行中！';
+  return '游戏已结束！';
 }
 
 function watchMotionProbe() {
   motionDetected = false;
   setTimeout(() => {
     if (!motionDetected) {
-      els.hint.textContent = '还没有检测到传感器数据。微信/浏览器可能要求 HTTPS 或系统运动权限，请先用“测试摇一次”确认链路。';
+      setTextContent([els.hint], '还没有检测到传感器数据。微信/浏览器可能要求 HTTPS 或系统运动权限，请先用“测试摇一次”确认链路。');
     }
   }, 2500);
 }

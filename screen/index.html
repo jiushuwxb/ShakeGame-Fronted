@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
@@ -8,38 +8,59 @@
   </head>
   <body>
     <main class="screen-shell">
-      <header class="screen-header">
-        <div>
-          <div class="brand" id="brandLine">Seagate Data Transfer Challenge</div>
-          <h1 id="title">希捷极速传输挑战赛</h1>
-          <p class="subtitle">扫码加入比赛，实时刷新摇动次数与排名。</p>
-        </div>
-        <div class="timer">
-          <span class="hint">倒计时</span>
-          <strong id="timer">60</strong>
-        </div>
-        <div class="qrcode" id="qrcode"></div>
-      </header>
-
-      <section class="screen-grid">
-        <div class="screen-panel">
-          <div class="status-line">
-            <span class="pill" id="status">连接中</span>
-            <strong>参与玩家 <span id="total">0/10</span></strong>
+      <section class="screen-ready hidden" id="screenReady">
+        <div class="screen-ready-mask"></div>
+        <aside class="screen-ready-side">
+          <div class="qrcode-frame ready-qrcode">
+            <img src="./assets/qrcode.png" alt="扫码参与">
           </div>
-          <div class="leaderboard" id="leaderboard"></div>
+          <img src="./assets/join.png" alt="扫码参与游戏互动" class="screen-join-image ready-join-image">
+        </aside>
+
+        <div class="screen-ready-main">
+          <div class="screen-ready-count">
+            <span>当前在线人数</span>
+            <strong id="readyTotal">10</strong>
+          </div>
+
+          <div class="screen-ready-grid" id="readyPlayers"></div>
+        </div>
+      </section>
+
+      <section class="screen-live hidden" id="screenLive">
+        <div class="screen-live-mask"></div>
+        <div class="screen-live-timer">
+          <img src="./assets/shalou.png" alt="倒计时" class="screen-live-timer-icon">
+          <strong id="liveTimer">00:59</strong>
         </div>
 
-        <aside class="control-panel">
-          <h2>现场控制</h2>
-          <p class="hint">输入后端 `ADMIN_TOKEN` 后可控制比赛流程。</p>
-          <input id="adminToken" type="password" placeholder="管理口令">
+        <div class="screen-live-center">
+          <img src="./assets/data.png" alt="数据传输赛道" class="screen-live-title-image">
+          <img src="./assets/ironwolf.png" alt="IRONWOLF PRO" class="screen-live-subtitle-image">
+        </div>
+
+        <section class="screen-live-race" id="liveLeaderboard"></section>
+
+        <aside class="screen-live-admin hidden">
+          <span class="pill" id="liveStatus">连接中</span>
+          <strong>参与玩家 <span id="liveTotal">0/10</span></strong>
+          <input id="liveAdminToken" type="password" placeholder="管理口令">
           <div class="stack">
-            <button id="start">开始比赛</button>
-            <button class="secondary" id="end">手动结束</button>
-            <button class="danger" id="reset">重置活动</button>
+            <button id="liveStart" type="button">开始比赛</button>
+            <button class="secondary" id="liveEnd" type="button">手动结束</button>
+            <button class="danger" id="liveReset" type="button">重置活动</button>
           </div>
         </aside>
+      </section>
+
+      <section class="screen-end hidden" id="screenEnd">
+        <div class="screen-live-mask"></div>
+        <div class="screen-end-inner">
+          <img src="./assets/win.png" alt="获奖名单" class="screen-end-title-image">
+          <img src="./assets/ironwolf.png" alt="IRONWOLF PRO" class="screen-end-subtitle-image">
+          <section class="screen-end-grid" id="endLeaderboard"></section>
+          <button class="screen-end-reset-button" id="endReset" type="button">重置活动</button>
+        </div>
       </section>
     </main>
     <script src="./config.js?v=20260409-domain1"></script>

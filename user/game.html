@@ -8,8 +8,13 @@
   </head>
   <body>
     <main class="game-shell">
+      <button class="result-test-button" id="resultTestButton" type="button">测试结果卡</button>
       <section class="game-entry-screen" id="landingScreen">
         <div class="game-entry-overlay"></div>
+        <div class="game-entry-start-layer" id="startLayer" aria-hidden="true">
+          <div class="game-entry-countdown-grid"></div>
+          <div class="game-entry-countdown-value" id="startCountdownValue">3</div>
+        </div>
         <div class="game-entry-inner">
           <header class="game-entry-brand" aria-label="Seagate">
             <img src="./assets/logo.png" alt="希捷logo" class="game-entry-logo">
@@ -29,6 +34,65 @@
       </section>
 
       <section class="game-screen hidden" id="gameScreen">
+        <section class="game-play-panel" id="playPanel">
+          <header class="game-play-brand" aria-label="Seagate">
+            <img src="./assets/logo.png" alt="Seagate logo" class="game-entry-logo">
+          </header>
+          <div class="game-play-topbar">
+            <div class="game-play-player">
+              <img id="playAvatar" class="game-play-avatar" alt="玩家头像">
+              <div class="game-play-player-copy">
+                <strong id="playNickname">微信用户</strong>
+                <span id="playRank">+0分</span>
+              </div>
+            </div>
+            <div class="game-play-timer">
+              <img src="./assets/shalou.png" alt="timer" class="game-play-timer-icon">
+              <strong id="playCountdown">--:--</strong>
+            </div>
+            <span class="game-play-status hidden" id="playStatus">连接中</span>
+          </div>
+          <div class="game-play-main">
+            <div class="game-play-score" id="playCount">+0分</div>
+            <img src="./assets/shake.png" alt="摇动手机" class="game-play-shake-image">
+          </div>
+          <p class="game-play-hint" id="playHint">游戏进行中！</p>
+        </section>
+        <section class="result-overlay hidden" id="resultOverlay">
+          <div class="result-card result-rank-card hidden" id="rankResultCard">
+            <button class="result-close result-card-close" id="rankResultClose" type="button" aria-label="关闭">×</button>
+            <div class="result-card-head">
+              <img src="./assets/touxiang.png" alt="玩家头像" class="result-avatar" id="resultAvatar">
+            </div>
+            <div class="result-rank-body">
+              <h2 id="resultTitle">恭喜，您获得第 1 名！</h2>
+              <div class="result-rank-table">
+                <div class="result-rank-header">
+                  <span>排序</span>
+                  <span>玩家</span>
+                  <span>分数</span>
+                </div>
+                <div class="result-rank-list" id="resultRankList"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="result-card result-prize-card hidden" id="prizeResultCard">
+            <button class="result-close result-card-close" id="prizeResultClose" type="button" aria-label="关闭">×</button>
+            <div class="result-card-head">
+              <img src="./assets/touxiang.png" alt="玩家头像" class="result-avatar" id="prizeAvatar">
+            </div>
+            <div class="result-prize-body">
+              <div class="result-prize-heading">
+                <span>神秘大礼</span>
+                <img src="./assets/wolflogo.png" alt="神秘大礼" class="result-prize-logo">
+              </div>
+              <h2>恭喜您中奖啦！</h2>
+              <p>请前往展台服务区兑换</p>
+              <img src="./assets/kulang.png" alt="兑奖提示" class="result-kulang">
+            </div>
+          </div>
+        </section>
         <section class="hero-card">
           <div class="brand">Seagate Challenge</div>
           <h1>极速传输<br>摇一摇挑战</h1>
