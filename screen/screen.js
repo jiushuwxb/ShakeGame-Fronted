@@ -6,11 +6,13 @@ const stateText = {
 };
 
 const els = {
+  screenHero: document.querySelector('#screenHero'),
   screenReady: document.querySelector('#screenReady'),
   screenLive: document.querySelector('#screenLive'),
   screenEnd: document.querySelector('#screenEnd'),
   readyTotal: document.querySelector('#readyTotal'),
   readyPlayers: document.querySelector('#readyPlayers'),
+  readyStart: document.querySelector('#readyStart'),
   liveStatus: document.querySelector('#liveStatus'),
   liveTimer: document.querySelector('#liveTimer'),
   liveTotal: document.querySelector('#liveTotal'),
@@ -68,6 +70,7 @@ function bindEvents() {
   });
 
   els.liveStart?.addEventListener('click', () => sendAdmin('admin_start'));
+  els.readyStart?.addEventListener('click', () => sendAdmin('admin_start'));
   els.liveEnd?.addEventListener('click', () => sendAdmin('admin_end'));
   els.liveReset?.addEventListener('click', () => {
     if (confirm('确认重置活动并清空所有玩家？')) sendAdmin('admin_reset');
@@ -80,6 +83,16 @@ function bindEvents() {
 function sendAdmin(type) {
   const token = (els.liveAdminToken?.value || '').trim();
   localStorage.setItem('shake_admin_token', token);
+  if (type === 'admin_reset') {
+    snapshot = {
+      ...snapshot,
+      status: 'waiting',
+      players: [],
+      endsAt: null,
+      startedAt: null
+    };
+    render();
+  }
   if (ws?.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ type, token }));
   }
@@ -89,21 +102,24 @@ function render() {
   if (!snapshot) return;
 
   const status = snapshot.status || 'waiting';
-  const players = status === 'ended'
-    ? (snapshot.players || [])
-    : (snapshot.players || []).filter((player) => player.online);
+  const allPlayers = snapshot.players || [];
+  const onlinePlayers = allPlayers.filter((player) => player.online);
+  const players = status === 'ended' ? allPlayers : onlinePlayers;
+  const showHero = status !== 'playing' && onlinePlayers.length === 0;
+  const showReady = status === 'waiting' && onlinePlayers.length > 0;
 
-  els.screenReady?.classList.toggle('hidden', status !== 'waiting');
+  els.screenHero?.classList.toggle('hidden', !showHero);
+  els.screenReady?.classList.toggle('hidden', !showReady);
   els.screenLive?.classList.toggle('hidden', status !== 'playing');
-  els.screenEnd?.classList.toggle('hidden', status !== 'ended');
+  els.screenEnd?.classList.toggle('hidden', status !== 'ended' || onlinePlayers.length === 0);
 
-  renderReadyPlayers(players);
+  renderReadyPlayers(onlinePlayers);
   renderLiveRace(players.slice(0, 10), status === 'playing');
-  renderEndLeaderboard(players.slice(0, 5), status === 'ended');
+  renderEndLeaderboard(players.slice(0, 5), status === 'ended' && onlinePlayers.length > 0);
 
   if (els.liveStatus) els.liveStatus.textContent = stateText[status] || status;
   if (els.liveTotal) {
-    els.liveTotal.textContent = `${players.length}/${snapshot.maxPlayers || 10}`;
+    els.liveTotal.textContent = `${onlinePlayers.length}/${snapshot.maxPlayers || 10}`;
   }
 
   startCountdown();
@@ -129,12 +145,7 @@ function renderLiveRace(players, isPlaying) {
     return;
   }
 
-  const filledPlayers = Array.from({ length: 10 }, (_, index) => players[index] || {
-    nickname: `${123 + index}用户`,
-    count: 0
-  });
-
-  els.liveLeaderboard.innerHTML = filledPlayers.map((item) => {
+  els.liveLeaderboard.innerHTML = players.map((item) => {
     const displayCount = Math.max(0, Number(item.count) || 0);
     const ratioCount = Math.min(LANE_SCORE_MAX, displayCount);
     const fillHeight = displayCount > 0
@@ -165,10 +176,7 @@ function renderEndLeaderboard(players, isEnded) {
   }
 
   const rankedPlayers = players.slice().sort((a, b) => (Number(b.count) || 0) - (Number(a.count) || 0));
-  const winners = Array.from({ length: 5 }, (_, index) => rankedPlayers[index] || {
-    nickname: `${123 + index}用户`,
-    count: 0
-  });
+  const winners = rankedPlayers.slice(0, 5);
 
   els.endLeaderboard.innerHTML = winners.map((item, index) => {
     const rank = index + 1;
