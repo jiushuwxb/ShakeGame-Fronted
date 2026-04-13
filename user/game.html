@@ -8,7 +8,27 @@
   </head>
   <body>
     <main class="game-shell">
-      <section class="game-screen" id="gameScreen">
+      <section class="game-entry-screen" id="landingScreen">
+        <div class="game-entry-overlay"></div>
+        <div class="game-entry-inner">
+          <header class="game-entry-brand" aria-label="Seagate">
+            <img src="./assets/logo.png" alt="希捷logo" class="game-entry-logo">
+          </header>
+
+          <section class="game-entry-copy">
+            <h1>大容远致<br>智启视听新境</h1>
+            <p>Mass Capacity, Smart Media Future</p>
+          </section>
+
+          <button class="game-entry-button" id="startEntry" type="button">
+            <img src="./assets/button2.png" alt="点击进入" class="game-entry-button-image">
+          </button>
+
+          <p class="game-entry-status" id="entryHint">游戏还未开始，请稍后!</p>
+        </div>
+      </section>
+
+      <section class="game-screen hidden" id="gameScreen">
         <section class="hero-card">
           <div class="brand">Seagate Challenge</div>
           <h1>极速传输<br>摇一摇挑战</h1>

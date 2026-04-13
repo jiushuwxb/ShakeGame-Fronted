@@ -43,7 +43,7 @@ init();
 
 async function init() {
   await ensureProfile();
-  showGameScreen(true);
+  showGameScreen(new URL(location.href).searchParams.get('start') === '1');
   renderProfile();
   connect();
   bindEvents();
@@ -144,6 +144,9 @@ function connect() {
 
 function bindEvents() {
   els.startEntry?.addEventListener('click', () => {
+    els.hint.textContent = '正在开启传感器，请准备进入游戏。';
+    const entryHint = document.querySelector('#entryHint');
+    if (entryHint) entryHint.textContent = '正在开启传感器，请稍候...';
     showGameScreen(true);
     requestMotionPermission();
   });

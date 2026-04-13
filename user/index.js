@@ -10,22 +10,24 @@ const debugEnabled = new URL(location.href).searchParams.has('debugAuth');
 init();
 
 async function init() {
-  setStartButtonReady(false);
   bindEvents();
-  await ensureProfile();
-  setStartButtonReady(canEnterGame());
+  // await ensureProfile();
+  // 移除按钮锁定逻辑，点击即可跳转
+  // setStartButtonReady(canEnterGame());
 }
 
 function bindEvents() {
   els.startButton?.addEventListener('click', () => {
-    if (!canEnterGame()) return;
+    // 注释掉锁定检查，点击直接跳转
+    // if (!canEnterGame()) return;
     location.href = './game.html';
   });
 
   els.startButton?.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
-    if (!canEnterGame()) return;
+    // 注释掉锁定检查，点击直接跳转
+    // if (!canEnterGame()) return;
     location.href = './game.html';
   });
 }
@@ -135,9 +137,10 @@ function canEnterGame() {
 
 function setStartButtonReady(ready) {
   if (!els.startButton) return;
-  els.startButton.classList.toggle('is-locked', !ready);
-  els.startButton.setAttribute('aria-disabled', ready ? 'false' : 'true');
-  els.startButton.tabIndex = ready ? 0 : -1;
+  // 注释掉锁定逻辑，始终显示为可点击状态
+  // els.startButton.classList.toggle('is-locked', !ready);
+  // els.startButton.setAttribute('aria-disabled', ready ? 'false' : 'true');
+  // els.startButton.tabIndex = ready ? 0 : -1;
 }
 
 function debugAuth(stage, payload) {
