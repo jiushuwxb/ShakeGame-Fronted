@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>希捷极速传输挑战赛大屏</title>
-    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./styles.css?v=20260414-countdown1">
   </head>
   <body>
     <main class="screen-shell">
@@ -47,6 +47,14 @@
         </div>
       </section>
 
+      <section class="screen-countdown hidden" id="screenCountdown">
+        <div class="screen-live-mask"></div>
+        <div class="screen-countdown-inner">
+          <div class="screen-countdown-value" id="screenCountdownValue">3</div>
+          <img src="./assets/line.png" alt="" class="screen-countdown-line">
+        </div>
+      </section>
+
       <section class="screen-live hidden" id="screenLive">
         <div class="screen-live-mask"></div>
         <div class="screen-live-timer">
@@ -83,7 +91,7 @@
         </div>
       </section>
     </main>
-    <script src="./config.js?v=20260409-domain1"></script>
-    <script src="./screen.js?v=20260409-domain1"></script>
+    <script src="./config.js?v=20260414-countdown1"></script>
+    <script src="./screen.js?v=20260414-countdown1"></script>
   </body>
 </html>

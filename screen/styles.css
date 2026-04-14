@@ -407,6 +407,7 @@ p {
   border-radius: 999px;
   background: linear-gradient(180deg, #a8ff69 0%, #7cd545 45%, #5ba02f 100%);
   box-shadow: 0 0 10px rgba(125, 255, 106, 0.4);
+  transition: height 0.16s linear;
 }
 
 .live-lane-player {

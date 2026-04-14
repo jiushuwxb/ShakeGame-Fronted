@@ -8,8 +8,10 @@ const stateText = {
 const els = {
   screenHero: document.querySelector('#screenHero'),
   screenReady: document.querySelector('#screenReady'),
+  screenCountdown: document.querySelector('#screenCountdown'),
   screenLive: document.querySelector('#screenLive'),
   screenEnd: document.querySelector('#screenEnd'),
+  screenCountdownValue: document.querySelector('#screenCountdownValue'),
   readyTotal: document.querySelector('#readyTotal'),
   readyPlayers: document.querySelector('#readyPlayers'),
   readyStart: document.querySelector('#readyStart'),
@@ -32,6 +34,9 @@ const LANE_FILL_MIN_HEIGHT = 16;
 let ws;
 let snapshot = null;
 let countdownTimer = null;
+let preGameCountdownTimer = null;
+let preGameCountdownValue = null;
+let startRequested = false;
 
 init();
 
@@ -69,8 +74,8 @@ function bindEvents() {
     localStorage.setItem('shake_admin_token', els.liveAdminToken.value.trim());
   });
 
-  els.liveStart?.addEventListener('click', () => sendAdmin('admin_start'));
-  els.readyStart?.addEventListener('click', () => sendAdmin('admin_start'));
+  els.liveStart?.addEventListener('click', startGameWithCountdown);
+  els.readyStart?.addEventListener('click', startGameWithCountdown);
   els.liveEnd?.addEventListener('click', () => sendAdmin('admin_end'));
   els.liveReset?.addEventListener('click', () => {
     if (confirm('确认重置活动并清空所有玩家？')) sendAdmin('admin_reset');
@@ -83,6 +88,9 @@ function bindEvents() {
 function sendAdmin(type) {
   const token = (els.liveAdminToken?.value || '').trim();
   localStorage.setItem('shake_admin_token', token);
+  if (type !== 'admin_start') {
+    cancelPreGameCountdown();
+  }
   if (type === 'admin_reset') {
     snapshot = {
       ...snapshot,
@@ -106,10 +114,16 @@ function render() {
   const onlinePlayers = allPlayers.filter((player) => player.online);
   const players = status === 'ended' ? allPlayers : onlinePlayers;
   const showHero = status !== 'playing' && onlinePlayers.length === 0;
-  const showReady = status === 'waiting' && onlinePlayers.length > 0;
+  const showReady = status === 'waiting' && onlinePlayers.length > 0 && !isPreGameCountdownActive() && !startRequested;
+  const showCountdown = status === 'waiting' && (isPreGameCountdownActive() || startRequested);
+
+  if (status === 'playing' || status === 'ended') {
+    cancelPreGameCountdown();
+  }
 
   els.screenHero?.classList.toggle('hidden', !showHero);
   els.screenReady?.classList.toggle('hidden', !showReady);
+  els.screenCountdown?.classList.toggle('hidden', !showCountdown);
   els.screenLive?.classList.toggle('hidden', status !== 'playing');
   els.screenEnd?.classList.toggle('hidden', status !== 'ended' || onlinePlayers.length === 0);
 
@@ -123,6 +137,55 @@ function render() {
   }
 
   startCountdown();
+}
+
+function isPreGameCountdownActive() {
+  return typeof preGameCountdownValue === 'number';
+}
+
+function startGameWithCountdown() {
+  if (!snapshot || snapshot.status !== 'waiting' || startRequested || isPreGameCountdownActive()) return;
+  if (ws?.readyState !== WebSocket.OPEN) return;
+
+  preGameCountdownValue = 3;
+  renderPreGameCountdown();
+  render();
+
+  preGameCountdownTimer = setInterval(() => {
+    if (preGameCountdownValue === null) return;
+
+    preGameCountdownValue -= 1;
+
+    if (preGameCountdownValue <= 0) {
+      cancelPreGameCountdown();
+      startRequested = true;
+      if (els.screenCountdownValue) {
+        els.screenCountdownValue.textContent = 'GO';
+        els.screenCountdownValue.classList.add('is-go');
+      }
+      render();
+      sendAdmin('admin_start');
+      return;
+    }
+
+    renderPreGameCountdown();
+  }, 1000);
+}
+
+function cancelPreGameCountdown() {
+  if (preGameCountdownTimer) {
+    clearInterval(preGameCountdownTimer);
+    preGameCountdownTimer = null;
+  }
+  preGameCountdownValue = null;
+  startRequested = false;
+}
+
+function renderPreGameCountdown() {
+  if (!els.screenCountdownValue) return;
+  const value = Math.max(1, Number(preGameCountdownValue) || 1);
+  els.screenCountdownValue.textContent = String(value);
+  els.screenCountdownValue.classList.toggle('is-go', false);
 }
 
 function renderReadyPlayers(players) {
@@ -145,26 +208,53 @@ function renderLiveRace(players, isPlaying) {
     return;
   }
 
-  els.liveLeaderboard.innerHTML = players.map((item) => {
-    const displayCount = Math.max(0, Number(item.count) || 0);
-    const ratioCount = Math.min(LANE_SCORE_MAX, displayCount);
-    const fillHeight = displayCount > 0
-      ? Math.max(LANE_FILL_MIN_HEIGHT, Math.round((ratioCount / LANE_SCORE_MAX) * LANE_FILL_MAX_HEIGHT))
-      : 0;
+  const lanesById = new Map(
+    Array.from(els.liveLeaderboard.querySelectorAll('.live-lane')).map((node) => [node.dataset.playerId, node])
+  );
 
-    return `
-      <div class="live-lane">
-        <div class="live-lane-score">+${displayCount}</div>
-        <div class="live-lane-track">
-          <div class="live-lane-fill" style="height:${fillHeight}px"></div>
-        </div>
-        <div class="live-lane-player">
-          <img src="./assets/touxiang.png" alt="">
-          <span>${escapeHtml(item.nickname || '现场玩家')}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
+  const orderedNodes = players.map((item) => {
+    const playerId = String(item.id || item.nickname || 'guest');
+    const lane = lanesById.get(playerId) || createLiveLane(playerId);
+    updateLiveLane(lane, item);
+    lanesById.delete(playerId);
+    return lane;
+  });
+
+  lanesById.forEach((lane) => lane.remove());
+  els.liveLeaderboard.replaceChildren(...orderedNodes);
+}
+
+function createLiveLane(playerId) {
+  const lane = document.createElement('div');
+  lane.className = 'live-lane';
+  lane.dataset.playerId = playerId;
+  lane.innerHTML = `
+    <div class="live-lane-score">+0</div>
+    <div class="live-lane-track">
+      <div class="live-lane-fill" style="height:0"></div>
+    </div>
+    <div class="live-lane-player">
+      <img src="./assets/touxiang.png" alt="">
+      <span></span>
+    </div>
+  `;
+  return lane;
+}
+
+function updateLiveLane(lane, item) {
+  const displayCount = Math.max(0, Number(item.count) || 0);
+  const ratioCount = Math.min(LANE_SCORE_MAX, displayCount);
+  const fillHeight = displayCount > 0
+    ? Math.max(LANE_FILL_MIN_HEIGHT, Math.round((ratioCount / LANE_SCORE_MAX) * LANE_FILL_MAX_HEIGHT))
+    : 0;
+
+  const score = lane.querySelector('.live-lane-score');
+  const fill = lane.querySelector('.live-lane-fill');
+  const name = lane.querySelector('.live-lane-player span');
+
+  if (score) score.textContent = `+${displayCount}`;
+  if (fill) fill.style.height = `${fillHeight}px`;
+  if (name) name.textContent = item.nickname || '现场玩家';
 }
 
 function renderEndLeaderboard(players, isEnded) {

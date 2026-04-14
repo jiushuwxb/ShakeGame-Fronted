@@ -160,6 +160,10 @@ function connect() {
 
     if (message.type === 'join_rejected') {
       setTextContent([els.hint], message.reason);
+      if (String(message.reason || '').includes('满')) {
+        setTimeout(() => alert('房间人数已满'), 0);
+        setTimeout(() => location.replace('./index.html'), 0);
+      }
     }
   });
 
@@ -464,6 +468,13 @@ function syncFromSnapshot() {
   const nextRoundId = snapshot.status === 'playing' ? snapshot.startedAt : null;
   const current = snapshot.players.find((item) => item.id === player.id);
   const onlineRank = onlinePlayers.findIndex((item) => item.id === player.id) + 1;
+  const maxPlayers = snapshot.maxPlayers || 10;
+
+  if (snapshot.status === 'waiting' && !current && onlinePlayers.length >= maxPlayers) {
+    setTimeout(() => alert('房间人数已满'), 0);
+    location.replace('./index.html');
+    return;
+  }
 
   if (snapshot.status === 'waiting' && !current) {
     resetPlayerGameState();
