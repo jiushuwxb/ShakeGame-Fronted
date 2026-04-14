@@ -37,6 +37,7 @@ let countdownTimer = null;
 let preGameCountdownTimer = null;
 let preGameCountdownValue = null;
 let startRequested = false;
+let gameAudio = null;
 
 init();
 
@@ -45,6 +46,7 @@ function init() {
   const adminToken = url.searchParams.get('adminToken') || localStorage.getItem('shake_admin_token') || '';
   if (els.liveAdminToken) els.liveAdminToken.value = adminToken;
 
+  gameAudio = createGameAudio();
   connect();
   bindEvents();
 }
@@ -136,6 +138,7 @@ function render() {
     els.liveTotal.textContent = `${onlinePlayers.length}/${snapshot.maxPlayers || 10}`;
   }
 
+  syncGameAudio(status);
   startCountdown();
 }
 
@@ -308,6 +311,30 @@ function formatLiveTime(ms) {
   const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
   const seconds = String(totalSeconds % 60).padStart(2, '0');
   return `${minutes}:${seconds}`;
+}
+
+function createGameAudio() {
+  const audio = new Audio('./assets/gamemusic.mp3');
+  audio.loop = true;
+  audio.preload = 'auto';
+  return audio;
+}
+
+function syncGameAudio(status) {
+  if (!gameAudio) return;
+
+  if (status === 'playing') {
+    if (gameAudio.paused) {
+      gameAudio.currentTime = 0;
+      gameAudio.play().catch(() => {});
+    }
+    return;
+  }
+
+  if (!gameAudio.paused) {
+    gameAudio.pause();
+  }
+  gameAudio.currentTime = 0;
 }
 
 function escapeHtml(value) {
