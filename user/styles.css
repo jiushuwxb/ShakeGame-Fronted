@@ -900,23 +900,7 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 26px;
-  margin-top: -24px;
-}
-
-.game-play-score,
-.count {
-  margin: 0;
-  color: #79ff43;
-  font-size: clamp(58px, 16vw, 86px);
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: -0.06em;
-  transform: rotate(-13deg);
-  text-shadow:
-    0 0 10px rgba(121, 255, 67, 0.72),
-    0 0 20px rgba(121, 255, 67, 0.44);
-  -webkit-text-stroke: 2px rgba(4, 13, 7, 0.96);
+  margin-top: -8px;
 }
 
 .game-play-shake-image {
@@ -924,6 +908,34 @@ h1 {
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 0 16px rgba(126, 255, 95, 0.38));
+  transform-origin: center bottom;
+  animation: gameShakeFloat 1.15s ease-in-out infinite;
+}
+
+@keyframes gameShakeFloat {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  20% {
+    transform: translate3d(-4px, -2px, 0) rotate(-8deg);
+  }
+
+  40% {
+    transform: translate3d(4px, -1px, 0) rotate(8deg);
+  }
+
+  60% {
+    transform: translate3d(-3px, 0, 0) rotate(-6deg);
+  }
+
+  80% {
+    transform: translate3d(3px, -2px, 0) rotate(6deg);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
 }
 
 .game-play-hint {
@@ -1218,7 +1230,6 @@ h1 {
     font-size: 22px;
   }
 
-  .game-play-score,
   .count {
     font-size: clamp(52px, 15vw, 78px);
   }
