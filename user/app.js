@@ -77,6 +77,9 @@ async function init() {
 }
 
 async function ensureProfile() {
+  // 微信授权逻辑已按要求注释，当前统一使用本地测试玩家身份。
+  /*
+  /*
   const url = new URL(location.href);
   const code = url.searchParams.get('code');
   const needsWechatOAuth = isWechat() && !url.searchParams.has('mock');
@@ -117,6 +120,9 @@ async function ensureProfile() {
       console.warn('WeChat authorize-url request failed, fallback to guest.', error);
     }
   }
+  */
+
+  if (player?.id && player?.nickname) return;
 
   player = {
     id: localStorage.getItem('shake_guest_id') || makeId(),
@@ -177,7 +183,7 @@ function bindEvents() {
   });
   els.enableMotion?.addEventListener('click', requestMotionPermission);
   els.mockShake?.addEventListener('click', () => onShake());
-  els.resultTestButton?.addEventListener('click', showTestResultCards);
+  // els.resultTestButton?.addEventListener('click', showTestResultCards);
   els.rankResultClose?.addEventListener('click', closeRankResultCard);
   els.prizeResultClose?.addEventListener('click', closePrizeResultCard);
 }
@@ -257,7 +263,7 @@ function showRankResultCard(players, rank) {
         <span>${index + 1}</span>
         <div class="result-rank-player">
           <img src="./assets/touxiang.png" alt="">
-          <span>${escapeHtml(maskName(item.nickname || '现场玩家'))}</span>
+          <span>${escapeHtml(item.nickname || '现场玩家')}</span>
         </div>
         <span class="result-rank-score">${item.count}</span>
       </div>
@@ -299,30 +305,30 @@ function showResultOverlay(players, rank) {
   prizePendingForRound = null;
 }
 
-function showTestResultCards() {
-  showGameScreen(true);
-  prizePendingForRound = 'test';
-  if (prizeSwitchTimer) {
-    clearTimeout(prizeSwitchTimer);
-    prizeSwitchTimer = null;
-  }
-
-  const demoPlayers = Array.from({ length: 10 }, (_, index) => ({
-    nickname: `187****43${String(50 + index).padStart(2, '0')}`,
-    count: 88888 - index * 111,
-    online: true
-  }));
-
-  setImageSource([els.resultAvatar, els.prizeAvatar], './assets/touxiang.png');
-  showRankResultCard(demoPlayers, 1);
-
-  prizeSwitchTimer = setTimeout(() => {
-    if (prizePendingForRound === 'test') {
-      showPrizeResultCard();
-      prizePendingForRound = null;
-    }
-  }, 1800);
-}
+// function showTestResultCards() {
+//   showGameScreen(true);
+//   prizePendingForRound = 'test';
+//   if (prizeSwitchTimer) {
+//     clearTimeout(prizeSwitchTimer);
+//     prizeSwitchTimer = null;
+//   }
+//
+//   const demoPlayers = Array.from({ length: 10 }, (_, index) => ({
+//     nickname: `187****43${String(50 + index).padStart(2, '0')}`,
+//     count: 88888 - index * 111,
+//     online: true
+//   }));
+//
+//   setImageSource([els.resultAvatar, els.prizeAvatar], './assets/touxiang.png');
+//   showRankResultCard(demoPlayers, 1);
+//
+//   prizeSwitchTimer = setTimeout(() => {
+//     if (prizePendingForRound === 'test') {
+//       showPrizeResultCard();
+//       prizePendingForRound = null;
+//     }
+//   }, 1800);
+// }
 
 function maskName(name) {
   const value = String(name || '');
