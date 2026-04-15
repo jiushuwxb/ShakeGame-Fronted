@@ -77,6 +77,19 @@ async function init() {
 }
 
 async function ensureProfile() {
+  const phoneNickname = resolvePhoneNickname(new URL(location.href));
+
+  if (phoneNickname) {
+    player = {
+      id: player?.id || localStorage.getItem('shake_guest_id') || makeId(),
+      nickname: phoneNickname,
+      avatar: player?.avatar || '',
+      source: 'phone'
+    };
+    localStorage.setItem('shake_guest_id', player.id);
+    savePlayer(player);
+    return;
+  }
   // 微信授权逻辑已按要求注释，当前统一使用本地测试玩家身份。
   /*
   /*
@@ -267,7 +280,7 @@ function showRankResultCard(players, rank) {
         <span>${index + 1}</span>
         <div class="result-rank-player">
           <img src="./assets/touxiang.png" alt="">
-          <span>${escapeHtml(item.nickname || '现场玩家')}</span>
+          <span>${escapeHtml(getPlayerDisplayName(item))}</span>
         </div>
         <span class="result-rank-score">${item.count}</span>
       </div>
@@ -548,7 +561,7 @@ function resetPlayerGameState() {
 }
 
 function renderProfile() {
-  setTextContent([els.nickname, els.playNickname], player.nickname);
+  setTextContent([els.nickname, els.playNickname], getPlayerDisplayName(player));
   if (els.rank) {
     els.rank.textContent = '--';
   }
@@ -568,9 +581,9 @@ function renderRanking(players) {
   els.ranking.innerHTML = players.map((item, index) => `
     <div class="rank-row">
       <div class="rank-no">${index + 1}</div>
-      <img class="avatar" src="${item.avatar || makeAvatar(item.nickname)}" alt="">
+      <img class="avatar" src="${item.avatar || makeAvatar(getPlayerDisplayName(item))}" alt="">
       <div>
-        <strong>${escapeHtml(item.nickname)}</strong>
+        <strong>${escapeHtml(getPlayerDisplayName(item))}</strong>
         <div class="bar"><span style="width:${Math.max(4, item.count / max * 100)}%"></span></div>
       </div>
       <strong>${item.count}</strong>
@@ -706,6 +719,22 @@ function loadPlayer() {
 
 function savePlayer(value) {
   localStorage.setItem('shake_player', JSON.stringify(value));
+}
+
+function resolvePhoneNickname(url) {
+  return maskPhone(url.searchParams.get('phone'));
+}
+
+function maskPhone(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (/^\d{11}$/.test(text)) return `${text.slice(0, 3)}****${text.slice(-4)}`;
+  if (/^\d{3}\*{4}\d{4}$/.test(text)) return text;
+  return text;
+}
+
+function getPlayerDisplayName(value) {
+  return value?.phone || value?.nickname || '现场玩家';
 }
 
 function isWechat() {

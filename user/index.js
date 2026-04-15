@@ -10,6 +10,7 @@ const debugEnabled = new URL(location.href).searchParams.has('debugAuth');
 init();
 
 async function init() {
+  applyPhoneProfileFromUrl();
   bindEvents();
   // await ensureProfile();
   // 移除按钮锁定逻辑，点击即可跳转
@@ -20,7 +21,7 @@ function bindEvents() {
   els.startButton?.addEventListener('click', () => {
     // 注释掉锁定检查，点击直接跳转
     // if (!canEnterGame()) return;
-    location.href = './game.html';
+    location.href = buildGameUrl();
   });
 
   els.startButton?.addEventListener('keydown', (event) => {
@@ -28,12 +29,13 @@ function bindEvents() {
     event.preventDefault();
     // 注释掉锁定检查，点击直接跳转
     // if (!canEnterGame()) return;
-    location.href = './game.html';
+    location.href = buildGameUrl();
   });
 }
 
 async function ensureProfile() {
   const url = new URL(location.href);
+  const phoneNickname = resolvePhoneNickname(url);
   const code = url.searchParams.get('code');
   const needsWechatOAuth = isWechat() && !url.searchParams.has('mock');
 
@@ -46,6 +48,18 @@ async function ensureProfile() {
     needsWechatOAuth,
     player
   });
+
+  if (phoneNickname) {
+    player = {
+      id: player?.id || localStorage.getItem('shake_guest_id') || makeId(),
+      nickname: phoneNickname,
+      avatar: player?.avatar || '',
+      source: 'phone'
+    };
+    localStorage.setItem('shake_guest_id', player.id);
+    savePlayer(player);
+    return;
+  }
 
   if (player?.id && player?.nickname && (!needsWechatOAuth || player.source === 'wechat')) return;
 
@@ -120,6 +134,39 @@ function loadPlayer() {
 
 function savePlayer(value) {
   localStorage.setItem('shake_player', JSON.stringify(value));
+}
+
+function applyPhoneProfileFromUrl() {
+  const nickname = resolvePhoneNickname(new URL(location.href));
+  if (!nickname) return;
+
+  player = {
+    id: player?.id || localStorage.getItem('shake_guest_id') || makeId(),
+    nickname,
+    avatar: player?.avatar || '',
+    source: 'phone'
+  };
+  localStorage.setItem('shake_guest_id', player.id);
+  savePlayer(player);
+}
+
+function resolvePhoneNickname(url) {
+  return maskPhone(url.searchParams.get('phone'));
+}
+
+function maskPhone(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (/^\d{11}$/.test(text)) return `${text.slice(0, 3)}****${text.slice(-4)}`;
+  if (/^\d{3}\*{4}\d{4}$/.test(text)) return text;
+  return text;
+}
+
+function buildGameUrl() {
+  const url = new URL('./game.html', location.href);
+  const phone = new URL(location.href).searchParams.get('phone');
+  if (phone) url.searchParams.set('phone', phone);
+  return url.toString();
 }
 
 function isWechat() {

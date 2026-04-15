@@ -198,7 +198,7 @@ function renderReadyPlayers(players) {
   els.readyPlayers.innerHTML = players.map((player) => `
     <div class="screen-ready-player">
       <img src="./assets/touxiang.png" alt="">
-      <span>${escapeHtml(player.nickname || '现场玩家')}</span>
+      <span>${escapeHtml(getPlayerDisplayName(player))}</span>
     </div>
   `).join('');
 }
@@ -216,7 +216,7 @@ function renderLiveRace(players, isPlaying) {
   );
 
   const orderedNodes = players.map((item) => {
-    const playerId = String(item.id || item.nickname || 'guest');
+    const playerId = String(item.id || getPlayerDisplayName(item) || 'guest');
     const lane = lanesById.get(playerId) || createLiveLane(playerId);
     updateLiveLane(lane, item);
     lanesById.delete(playerId);
@@ -257,7 +257,7 @@ function updateLiveLane(lane, item) {
 
   if (score) score.textContent = `+${displayCount}`;
   if (fill) fill.style.height = `${fillHeight}px`;
-  if (name) name.textContent = item.nickname || '现场玩家';
+  if (name) name.textContent = getPlayerDisplayName(item);
 }
 
 function renderEndLeaderboard(players, isEnded) {
@@ -281,7 +281,7 @@ function renderEndLeaderboard(players, isEnded) {
           ${crown ? `<img src="${crown}" alt="" class="end-player-crown">` : ''}
           <img src="./assets/touxiang.png" alt="" class="end-player-avatar">
         </div>
-        <span class="end-player-name">${escapeHtml(item.nickname || '现场玩家')}</span>
+        <span class="end-player-name">${escapeHtml(getPlayerDisplayName(item))}</span>
       </div>
     `;
   }).join('');
@@ -335,6 +335,10 @@ function syncGameAudio(status) {
     gameAudio.pause();
   }
   gameAudio.currentTime = 0;
+}
+
+function getPlayerDisplayName(player) {
+  return player?.phone || player?.nickname || '现场玩家';
 }
 
 function escapeHtml(value) {
