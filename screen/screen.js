@@ -297,7 +297,7 @@ function updateCountdown() {
   if (!els.liveTimer) return;
 
   if (!snapshot || snapshot.status !== 'playing' || !snapshot.endsAt) {
-    const idleSeconds = snapshot?.status === 'ended' ? 0 : Math.round((snapshot?.durationMs || 30000) / 1000);
+    const idleSeconds = snapshot?.status === 'ended' ? 0 : Math.round((snapshot?.durationMs || 15000) / 1000);
     els.liveTimer.textContent = formatLiveTime(idleSeconds * 1000);
     return;
   }
