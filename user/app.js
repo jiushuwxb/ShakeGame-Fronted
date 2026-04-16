@@ -481,7 +481,7 @@ function syncFromSnapshot() {
   const nextRoundId = snapshot.status === 'playing' ? snapshot.startedAt : null;
   const current = snapshot.players.find((item) => item.id === player.id);
   const onlineRank = onlinePlayers.findIndex((item) => item.id === player.id) + 1;
-  const maxPlayers = snapshot.maxPlayers || 10;
+  const maxPlayers = snapshot.maxPlayers || Number.MAX_SAFE_INTEGER;
 
   if (snapshot.status === 'waiting' && !current && onlinePlayers.length >= maxPlayers) {
     setTimeout(() => alert('房间人数已满'), 0);

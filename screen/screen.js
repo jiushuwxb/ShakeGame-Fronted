@@ -135,7 +135,7 @@ function render() {
 
   if (els.liveStatus) els.liveStatus.textContent = stateText[status] || status;
   if (els.liveTotal) {
-    els.liveTotal.textContent = `${onlinePlayers.length}/${snapshot.maxPlayers || 10}`;
+    els.liveTotal.textContent = String(onlinePlayers.length);
   }
 
   syncGameAudio(status);
