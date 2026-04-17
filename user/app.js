@@ -308,7 +308,7 @@ function showResultOverlay(players, rank) {
   setImageSource([els.resultAvatar, els.prizeAvatar], './assets/touxiang.png');
   showRankResultCard(players, rank > 0 ? rank : players.length + 1);
 
-  if (rank > 0 && rank <= 5) {
+  if (rank > 0 && rank <= 10) {
     prizePendingForRound = snapshot.endsAt;
     prizeSwitchTimer = setTimeout(() => {
       if (prizePendingForRound === snapshot?.endsAt) {
