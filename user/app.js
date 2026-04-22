@@ -202,7 +202,8 @@ function bindEvents() {
   els.mockShake?.addEventListener('click', () => onShake());
   // els.resultTestButton?.addEventListener('click', showTestResultCards);
   els.rankResultClose?.addEventListener('click', closeRankResultCard);
-  els.prizeResultClose?.addEventListener('click', closePrizeResultCard);
+  // 暂时关闭中奖弹窗，仅保留排名列表弹窗。
+  // els.prizeResultClose?.addEventListener('click', closePrizeResultCard);
 }
 
 function showGameScreen(visible) {
@@ -252,10 +253,11 @@ function syncResultOverlayVisibility() {
 }
 
 function closeRankResultCard() {
-  if (prizePendingForRound === snapshot?.endsAt || prizePendingForRound === 'test') {
-    prizePendingForRound = null;
-    showPrizeResultCard();
-  }
+  // 暂时关闭中奖弹窗，仅关闭当前排名列表弹窗。
+  // if (prizePendingForRound === snapshot?.endsAt || prizePendingForRound === 'test') {
+  //   prizePendingForRound = null;
+  //   showPrizeResultCard();
+  // }
   els.rankResultCard?.classList.add('hidden');
   syncResultOverlayVisibility();
 }
@@ -305,20 +307,21 @@ function showResultOverlay(players, rank) {
   if (resultShownForRound === snapshot.endsAt) return;
   resultShownForRound = snapshot.endsAt;
 
-  setImageSource([els.resultAvatar, els.prizeAvatar], './assets/touxiang.png');
+  // 暂时关闭中奖弹窗，仅更新排名弹窗头像。
+  setImageSource([els.resultAvatar], './assets/touxiang.png');
   showRankResultCard(players, rank > 0 ? rank : players.length + 1);
 
-  if (rank > 0 && rank <= 10) {
-    prizePendingForRound = snapshot.endsAt;
-    prizeSwitchTimer = setTimeout(() => {
-      if (prizePendingForRound === snapshot?.endsAt) {
-        showPrizeResultCard();
-        prizePendingForRound = null;
-      }
-    }, 2200);
-    return;
-  }
-
+  // 暂时关闭中奖弹窗切换逻辑。
+  // if (rank > 0 && rank <= 10) {
+  //   prizePendingForRound = snapshot.endsAt;
+  //   prizeSwitchTimer = setTimeout(() => {
+  //     if (prizePendingForRound === snapshot?.endsAt) {
+  //       showPrizeResultCard();
+  //       prizePendingForRound = null;
+  //     }
+  //   }, 2200);
+  //   return;
+  // }
   prizePendingForRound = null;
 }
 
