@@ -62,6 +62,7 @@ let preStartTimer = null;
 let resultShownForRound = null;
 let prizePendingForRound = null;
 let prizeSwitchTimer = null;
+let manualDisconnect = false;
 
 init();
 
@@ -181,6 +182,7 @@ function connect() {
   });
 
   ws.addEventListener('close', () => {
+    if (manualDisconnect) return;
     setTextContent([els.hint], `连接已断开，正在重连：${wsUrl}`);
     setTimeout(connect, 1200);
   });
@@ -365,6 +367,11 @@ function prepareStartEntry() {
 }
 
 function startPreGameSequence() {
+  if (snapshot?.status === 'playing') {
+    alert('游戏进行中，请等待游戏结束');
+    exitToIndexWithDisconnect();
+    return;
+  }
   if (preStartActive) return;
   preStartActive = true;
 
@@ -619,6 +626,19 @@ function getServerNow() {
 function getRemainingGameMs() {
   if (!snapshot?.endsAt) return 0;
   return Math.max(0, snapshot.endsAt - getServerNow());
+}
+
+function exitToIndexWithDisconnect() {
+  manualDisconnect = true;
+
+  if (ws?.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'leave_player' }));
+    ws.close(1000, 'return_to_index');
+  } else if (ws?.readyState === WebSocket.CONNECTING) {
+    ws.close();
+  }
+
+  location.replace('./index.html');
 }
 
 function getHint(status) {
