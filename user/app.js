@@ -459,6 +459,7 @@ async function requestMotionPermission() {
 
 function onShake() {
   if (snapshot?.status !== 'playing') return;
+  if (getRemainingGameMs() <= 0) return;
 
   const now = Date.now();
   if (now - lastShakeAt < 150) return;
@@ -607,9 +608,17 @@ function updateCountdown() {
     return;
   }
 
-  const serverNow = Date.now() + clockOffsetMs;
-  const remaining = Math.max(0, snapshot.endsAt - serverNow);
+  const remaining = getRemainingGameMs();
   setTextContent([els.countdown, els.playCountdown], formatCountdown(remaining));
+}
+
+function getServerNow() {
+  return Date.now() + clockOffsetMs;
+}
+
+function getRemainingGameMs() {
+  if (!snapshot?.endsAt) return 0;
+  return Math.max(0, snapshot.endsAt - getServerNow());
 }
 
 function getHint(status) {

@@ -38,6 +38,7 @@ let preGameCountdownTimer = null;
 let preGameCountdownValue = null;
 let startRequested = false;
 let gameAudio = null;
+let clockOffsetMs = 0;
 
 init();
 
@@ -62,6 +63,9 @@ function connect() {
     const message = JSON.parse(event.data);
     if (message.type === 'snapshot') {
       snapshot = message.data;
+      if (typeof snapshot.serverTime === 'number') {
+        clockOffsetMs = snapshot.serverTime - Date.now();
+      }
       render();
     }
   });
@@ -302,7 +306,7 @@ function updateCountdown() {
     return;
   }
 
-  const remaining = Math.max(0, snapshot.endsAt - Date.now());
+  const remaining = Math.max(0, snapshot.endsAt - getServerNow());
   els.liveTimer.textContent = formatLiveTime(remaining);
 }
 
@@ -339,6 +343,10 @@ function syncGameAudio(status) {
 
 function getPlayerDisplayName(player) {
   return player?.phone || player?.nickname || '现场玩家';
+}
+
+function getServerNow() {
+  return Date.now() + clockOffsetMs;
 }
 
 function escapeHtml(value) {
